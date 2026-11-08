@@ -12,6 +12,7 @@ Full rules/specs: `docs/hackathondetails.md`. Plan: `docs/PROJECT_FLOW.md`, `doc
 ## While working
 - Small branch per task (`a/eskf-bias`, `b/velnet-v1`, ...), merge to `main` same day. Never leave work unpushed overnight.
 - **Held-out rule (non-negotiable):** test split = `MH_04, V1_03, V2_02, TUM room6` (frozen in DECISIONS.md D-003). Never tune, train, pick thresholds or choose models on them. Only `scripts/run_heldout.sh` touches them, only to report.
+- **Anti-overfitting (D-007, read it before any tuning or training):** nets train on `augment.py`, never `degrade.py`; choose models by grouped CV; keep rule is fixed in advance; held-out has a 3-run budget.
 - Never use ground truth of the evaluation input inside the estimator. If the organizers' test reuses public sequences, we still never exploit known GT.
 - Every number that goes in the deck/README must have an `EXPERIMENTS.md` row with a commit hash.
 - Submission code (`src/`) must respect budgets: ≤8 MB peak RAM, ≤20 ms per 1 s of IMU, single thread, offline, no network.

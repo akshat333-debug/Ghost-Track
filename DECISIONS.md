@@ -29,3 +29,15 @@ Format: ID · date · decision · why · alternatives rejected · owner. Never e
 - D-004's "must beat the previous one on held-out" and its Day 5 fallback test contradicted D-003 and the CLAUDE.md held-out rule: picking layers on held-out makes the reported numbers optimistic.
 - Layer keep/drop, thresholds, model choice and the Day 5 fallback are all decided on val (MH_05, TUM room5). Held-out runs only through `scripts/run_heldout.sh`, for reporting.
 
+### D-007 · 9 Nov · Anti-overfitting protocol (refines D-006)
+Training data is small (11 sequences, roughly 25 min) and val is only 2 sequences, so overfitting and selection noise are the main threats to the score. Rules:
+1. **Separate generators.** Nets train on `research/augment.py`, a different degradation family from `research/degrade.py` (heavy-tailed noise, step and sinusoidal bias, varied escalation curves, severity 0.3–3). Nets never import `degrade.py`; a test enforces it. Otherwise training and measurement share one generating function and the numbers flatter us.
+2. **Organizer script is a one-shot unseen evaluator first.** When it arrives, run the frozen pipeline on it once and log the result before any use in tuning or training.
+3. **Model selection = grouped cross-validation inside train**, 5 folds, each leaving out a whole environment: MH_01–03, V1_01–02, V2_01+03, room1–2, room3–4. Never split windows of one sequence across train and test. Val confirms the CV choice; 2 sequences cannot pick among many candidates.
+4. **Keep rule, fixed before results.** A layer stays only if, across CV folds and val: median per-sequence ATE or blind error improves by ≥10%, it wins ≥2/3 of paired sequence-seed comparisons, and no sequence worsens by >25%.
+5. **Cross-sensor check.** Report train-EuRoC→test-TUM and the reverse. They use different IMUs and motion, and this is our best estimate of behaviour on data we have not seen.
+6. **Capacity.** ≤100k params, weight decay, random rotation augmentation, early stopping on the fold's left-out group. Final retrain on train+val uses the epoch count fixed by CV. Held-out never enters weights. Uncertainty heads must show 60–75% 1-sigma coverage on left-out folds.
+7. **Classical tuning counts too.** ESKF parameters are tuned on train, confirmed on val, and swept at severity 0.5/1/2/3; a narrow optimum is rejected.
+8. **Held-out budget: 3 runs per pipeline** (Day 5, after the C++ port, final). `run_heldout.sh` requires a clean git tree and appends to `docs/HELDOUT_LOG.md`. Any change motivated by a held-out result marks that run contaminated in the log.
+9. **Claims.** Organizers may reuse public sequences we trained on. Deck and README quote held-out numbers only and say so.
+

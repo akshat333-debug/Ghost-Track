@@ -3,7 +3,6 @@
 Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C++, B nets, C data/eval/docs.
 
 ## Next up
-- [ ] Day 0 — Register team on Google Form before 8 Nov 23:59 (any member)
 - [ ] Day 0 — Send `docs/ORGANIZER_QUESTIONS.md` email to prism@samsung.com (C)
 - [ ] Day 0 — Download EuRoC + TUM-VI CSVs: `scripts/download_euroc.py`, `scripts/download_tumvi.sh`; each teammate runs once (in progress)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
@@ -12,6 +11,8 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] `research/io_euroc.py` loader (IMU csv + GT) + TUM writer (A)
 - [x] L0 naive strapdown baseline `research/baselines/naive.py` (A)
 - [ ] Training window sampler + dataset class (B)
+- [ ] `research/augment.py`: training degradation family, distinct from `degrade.py` (B, D-007)
+- [ ] Grouped 5-fold CV harness (B, D-007)
 - [x] `research/degrade.py` degradation simulator (C)
 - [x] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
 
@@ -41,12 +42,17 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] Submit by 18:00 via Google Form. Keep backup L1 zip.
 
 ## Done
+- [x] Team registered as **Zero Drift** (confirmed 9 Nov)
 - [x] Repo scaffold + team docs (local commit, 8 Nov)
 - [x] GitHub remote `akshat333-debug/Ghost-Track` connected, `main` pushed (9 Nov)
 - [x] Full plan saved to `docs/PLAN.md` (9 Nov)
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — anti-overfitting protocol
+- Done: D-007 logged; held-out runs now need a clean tree, use seeds 100–102, and append to `docs/HELDOUT_LOG.md`; test blocks nets from importing `degrade.py`.
+- Next: real-data L0, then L1 ESKF. Team B must build `augment.py` and the CV harness before the first training run.
+- Gotchas: read D-007 before tuning anything. Team is Zero Drift; organizer email still needs the college name.
 ### 9 Nov — eval harness + L0
 - Done: loader, TUM writer, degradation simulator, evo scorer with per-tier errors, format validator, L0, held-out guard, 7 self-checks passing on synthetic flights.
 - Next: real-data run of L0 on val, ground-truth frame check, then L1 ESKF.

@@ -1,4 +1,7 @@
 """Self-checks for the harness on a synthetic flight. Run: python -m pytest tests -q"""
+import re
+from pathlib import Path
+
 import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation as R
@@ -94,3 +97,11 @@ def test_heldout_guard(monkeypatch):
     monkeypatch.delenv("PF_HELDOUT", raising=False)
     with pytest.raises(PermissionError):
         sequences("heldout")
+
+
+def test_nets_do_not_train_on_the_evaluation_generator():
+    # D-007: sharing one degradation generator would flatter every measured number
+    root = Path(__file__).resolve().parent.parent / "research"
+    for f in [root / "augment.py", *(root / "nets").rglob("*.py")]:
+        if f.exists():
+            assert not re.search(r"\bdegrade\b", f.read_text()), f"{f} references degrade"

@@ -3,7 +3,7 @@
 Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C++, B nets, C data/eval/docs.
 
 ## Next up
-- [ ] Day 0 — Send organizer email: Gmail draft ready, a member must review and press send (C)
+- [ ] Waiting on organizer reply to questions sent 9 Nov; log answers in `docs/ORGANIZER_QUESTIONS.md` (C)
 - [ ] Day 0 — Download EuRoC + TUM-VI CSVs: `scripts/download_euroc.py`, `scripts/download_tumvi.sh`; each teammate runs once (in progress)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
 
@@ -17,11 +17,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
 
 ## Day 2–4
-- [ ] L1 ESKF: first version in `research/baselines/eskf.py`, needs tuning on train (A)
+- [x] L1 ESKF tuned on train (tilt noise); parity with C++ held
 - [ ] Dropout handling + RTS smoother (A)
 - [ ] L2 IMU correction net v1 (B)
 - [ ] L3 velocity net: code done (84k params), full 5-fold CV pending data (B)
-- [ ] Fuse L3 into ESKF (A)
+- [x] Fusion hook: `eskf.run(..., vel_fn=...)`; C++ net forward still pending
 - [x] `scripts/run_heldout.sh`
 - [x] `scripts/measure_budget.sh`
 - [ ] L5 blind-5 s forecaster: constant velocity, damped acceleration, GRU; compare on val (C/B)
@@ -50,6 +50,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — ESKF tuning and CV runner
+- Done: tilt noise set to 4 m/s^2 (flat optimum at severity 0.5–3), median tilt error now about 1°. Gap attitude uncertainty raised. Net fusion hook added. `scripts/train_cv.sh` trains all folds and applies the D-007 keep rule via `research/eval/run_cv.py`. Tried and removed: holding the last angular rate through gaps (no gain).
+- Finding: tightening velocity or position priors drives ATE to the never-moving value (about 1.27 m median on 6 train sequences). Classical IMU-only cannot beat it; do not tune further for ATE.
+- Next: when all sequences land, `scripts/train_cv.sh`.
+- Gotchas: sweeps used train sequences only.
 ### 9 Nov — velocity net code
 - Done: `augment.py`, grouped folds, `VelNet` (84,246 params), trainer with early stopping and coverage reporting; runs on Apple MPS, and Colab/Kaggle should need no change. 15 tests pass.
 - Smoke only (train room1, test room2, 6 epochs): test RMSE 0.47 m/s per axis vs 0.59 for predicting zero, train 0.33 and widening, coverage 0.51 (target 60–75%). One training sequence, so this proves the pipeline runs, not accuracy. Not an experiment row.

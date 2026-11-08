@@ -91,7 +91,7 @@ static M3 inv3(const M3& m) {
 const double G = 9.81;
 const int UPDATE_EVERY = 20, STATIC_WINDOW = 100;
 const double GYRO_NOISE = 1.7e-4, ACCEL_NOISE = 2.0e-3, GYRO_WALK = 1.9e-5, ACCEL_WALK = 3.0e-3;
-const double TILT_SIGMA = 0.5, VEL_SIGMA = 1.5, POS_SIGMA = 15.0, STATIC_VEL_SIGMA = 0.1;
+const double TILT_SIGMA = 4.0, VEL_SIGMA = 1.5, POS_SIGMA = 15.0, STATIC_VEL_SIGMA = 0.1;
 const double STATIC_RATIO = 3.0, BLIND_TAU = 2.0;
 
 struct Filter {
@@ -127,7 +127,7 @@ struct Filter {
         P = F * P * tr(F);
         for (int i = 0; i < 3; i++) {
             P[3 + i][3 + i] += 1.0 * dt;
-            P[6 + i][6 + i] += 1e-4 * dt;
+            P[6 + i][6 + i] += 0.3 * dt;
         }
     }
     void update(const V3& r, const Mat<3, 15>& H, double sigma) {

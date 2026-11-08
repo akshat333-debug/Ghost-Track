@@ -12,16 +12,20 @@ from scipy.spatial.transform import Rotation as R
 G = 9.81
 UPDATE_EVERY = 20  # samples; pseudo-measurements run at about 10 Hz
 STATIC_WINDOW = 100  # samples
+VEL_WINDOW = 200  # samples; must equal research.nets.vel_net.WINDOW
 
 PARAMS = {
     "gyro_noise": 1.7e-4, "accel_noise": 2.0e-3,   # per sqrt(Hz)
     "gyro_walk": 1.9e-5, "accel_walk": 3.0e-3,     # per sqrt(Hz) * s^-1
-    "tilt_sigma": 0.5,      # m/s^2, gravity measurement while moving
+    "tilt_sigma": 4.0,      # m/s^2, gravity measurement while moving; broad optimum across severities
     "vel_sigma": 1.5,       # m/s, bounded-motion prior per update
     "pos_sigma": 15.0,      # m, indoor-extent prior per update
     "static_vel_sigma": 0.1,
     "static_ratio": 3.0,    # window variance / high-frequency noise variance
     "blind_tau": 2.0,       # s, velocity decay once the IMU has failed
+    "net_sigma_scale": 1.0,  # inflation of the velocity net's reported uncertainty
+    "gap_att_q": 0.3,       # rad^2/s, attitude uncertainty growth with no gyro
+    "gap_vel_q": 1.0,       # (m/s)^2/s, velocity uncertainty growth with no accel
 }
 
 
@@ -65,22 +69,25 @@ class Filter:
         self.v = self.v + acc * dt
         self.C = self.C @ exp_so3(w * dt)
 
-    def coast(self, dt, decay, attitude_q=1e-4, accel_q=1.0):
+    def coast(self, dt, decay):
         """No IMU this step: keep moving on current velocity and grow uncertainty."""
+        c = self.c
         self.p = self.p + self.v * dt
         self.v = self.v * decay
         F = np.eye(15)
         F[:3, 3:6] = np.eye(3) * dt
         self.P = F @ self.P @ F.T
-        self.P[np.diag_indices(15)] += np.r_[np.zeros(3), np.full(3, accel_q), np.full(3, attitude_q),
+        self.P[np.diag_indices(15)] += np.r_[np.zeros(3), np.full(3, c["gap_vel_q"]), np.full(3, c["gap_att_q"]),
                                              np.zeros(6)] * dt
 
     def update(self, r, H, sigma):
-        S = H @ self.P @ H.T + np.eye(len(r)) * sigma**2
+        """sigma is a scalar or one value per measurement component."""
+        R_ = np.eye(len(r)) * sigma**2
+        S = H @ self.P @ H.T + R_
         K = np.linalg.solve(S, H @ self.P).T
         dx = K @ r
         I_KH = np.eye(15) - K @ H
-        self.P = I_KH @ self.P @ I_KH.T + K @ K.T * sigma**2
+        self.P = I_KH @ self.P @ I_KH.T + K @ R_ @ K.T
         self.p = self.p + dx[:3]
         self.v = self.v + dx[3:6]
         self.C = self.C @ exp_so3(dx[6:9])
@@ -94,10 +101,10 @@ class Filter:
         H[:, 12:15] = np.eye(3)
         self.update(f_mean - self.ba - up, H, sigma)
 
-    def update_velocity(self, sigma):
+    def update_velocity(self, sigma, target=np.zeros(3)):
         H = np.zeros((3, 15))
         H[:, 3:6] = np.eye(3)
-        self.update(-self.v, H, sigma)
+        self.update(target - self.v, H, sigma)
 
     def update_position(self, sigma):
         H = np.zeros((3, 15))
@@ -146,7 +153,8 @@ def is_static(w, f, ratio):
     return True
 
 
-def run(t_ns, gyro, accel, params=PARAMS):
+def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None):
+    """vel_fn(C, gyro, accel) maps one window to (velocity, per-axis sigma); None runs classical L1."""
     T = (t_ns - t_ns[0]) * 1e-9
     n = len(T)
     good = ~(np.isnan(gyro).any(axis=1) | np.isnan(accel).any(axis=1))
@@ -181,7 +189,13 @@ def run(t_ns, gyro, accel, params=PARAMS):
                                      params["gyro_noise"] * scale[i] * np.sqrt(1 / median_dt / STATIC_WINDOW))
             else:
                 flt.update_tilt(f_mean, params["tilt_sigma"])
-                flt.update_velocity(params["vel_sigma"])
+                if vel_fn is None:
+                    flt.update_velocity(params["vel_sigma"])
             flt.update_position(params["pos_sigma"])
+        if vel_fn is not None and good[i] and i >= VEL_WINDOW and i % UPDATE_EVERY == 0:
+            C_out[i] = flt.C
+            v_net, sigma = vel_fn(C_out[i - VEL_WINDOW + 1:i + 1], gyro[i - VEL_WINDOW + 1:i + 1],
+                                  accel[i - VEL_WINDOW + 1:i + 1])
+            flt.update_velocity(sigma * params["net_sigma_scale"], v_net)
         p_out[i], C_out[i] = flt.p, flt.C
     return p_out, R.from_matrix(C_out).as_quat()

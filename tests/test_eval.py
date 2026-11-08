@@ -134,3 +134,29 @@ def test_velnet_fits_capacity_and_shapes():
     assert param_count(m) <= 100_000
     mu, logvar = m(torch.zeros(2, 7, WINDOW))
     assert mu.shape == (2, 3) and logvar.shape == (2, 3)
+
+
+def test_velocity_measurements_bound_drift():
+    from research.baselines.eskf import PARAMS, run as eskf_run
+    t, w, a, _ = flight(120)
+    biased = a + [0.3, 0.0, 0.0]  # large uncorrected accel bias: drifts badly without any aiding
+    calls = []
+
+    def still(C, g, f):
+        calls.append(C.shape)
+        return np.zeros(3), np.full(3, 0.05)
+
+    weak = dict(PARAMS, vel_sigma=1e3, pos_sigma=1e4)
+    free, _ = eskf_run(t, w, biased, weak)
+    held, _ = eskf_run(t, w, biased, weak, vel_fn=still)
+    assert calls and calls[0] == (200, 3, 3)
+    assert np.abs(held).max() < np.abs(free).max() / 5
+
+
+def test_keep_rule_is_strict():
+    from research.eval.run_cv import keep_rule
+    seqs = np.array(["a", "a", "b", "b"])
+    base = np.array([10.0, 10.0, 10.0, 10.0])
+    assert keep_rule(base * 0.8, base, seqs)["keep"]
+    assert not keep_rule(base * 0.95, base, seqs)["keep"], "below the 10% gain threshold"
+    assert not keep_rule(np.array([5.0, 5.0, 13.0, 13.0]), base, seqs)["keep"], "one sequence worse by 30%"

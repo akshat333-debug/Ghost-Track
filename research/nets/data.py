@@ -7,7 +7,7 @@ from research.io_euroc import load_seq
 from research.nets.vel_net import ACCEL_SCALE, GYRO_SCALE, WINDOW
 
 G = 9.81
-MAX_TILT = np.deg2rad(5.0)  # shortcut: assumed attitude error, replace with the ESKF's measured tilt error
+TILT_SCALE = np.deg2rad(2.0)  # exponential: matches ESKF tilt error on train (p50 about 1 deg, p95 about 7)
 
 
 class Sequence:
@@ -41,13 +41,18 @@ def make_batch(seqs, size, rng):
 def _features(gyro, accel, C, v, rng):
     g, a, mask = corrupt(gyro, accel, rng)
     b = len(g)
-    tilt = rng.uniform(0, MAX_TILT, b)
+    tilt = rng.exponential(TILT_SCALE, b)
     az = rng.uniform(0, 2 * np.pi, b)
     err = R.from_rotvec(np.c_[np.cos(az) * tilt, np.sin(az) * tilt, 0 * tilt]).as_matrix()[:, None]
     yaw = R.from_euler("z", rng.uniform(0, 2 * np.pi, b)).as_matrix()
     W = yaw[:, None] @ err @ C
 
+    return to_input(W, g, a, mask), np.einsum("bij,bj->bi", yaw, v).astype(np.float32)
+
+
+def to_input(W, g, a, mask):
+    """Net input from body-to-world attitude W (B, N, 3, 3). Shared by training and the estimator."""
     gw = np.einsum("bnij,bnj->bni", W, g)
     aw = np.einsum("bnij,bnj->bni", W, a) - mask[..., None] * np.array([0, 0, G])
     x = np.concatenate([gw / GYRO_SCALE, aw / ACCEL_SCALE, mask[..., None]], axis=2).transpose(0, 2, 1)
-    return x.astype(np.float32), np.einsum("bij,bj->bi", yaw, v).astype(np.float32)
+    return x.astype(np.float32)

@@ -4,6 +4,7 @@ from torch import nn
 
 WINDOW = 200
 GYRO_SCALE, ACCEL_SCALE = 3.0, 5.0
+IN_CHANNELS = 10  # world gyro 3, world accel 3, validity 1, tilt cue 3
 
 
 class VelNet(nn.Module):
@@ -11,7 +12,7 @@ class VelNet(nn.Module):
 
     def __init__(self):
         super().__init__()
-        chans = [7, 16, 32, 48, 64, 64, 64]
+        chans = [IN_CHANNELS, 16, 32, 48, 64, 64, 64]
         layers = []
         for a, b in zip(chans, chans[1:]):
             layers += [nn.Conv1d(a, b, 5, stride=2, padding=2), nn.ReLU()]

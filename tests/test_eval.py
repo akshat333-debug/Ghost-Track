@@ -129,10 +129,10 @@ def test_augment_returns_clean_arrays_and_masks_drops():
 
 def test_velnet_fits_capacity_and_shapes():
     import torch
-    from research.nets.vel_net import VelNet, WINDOW, param_count
+    from research.nets.vel_net import IN_CHANNELS, VelNet, WINDOW, param_count
     m = VelNet()
     assert param_count(m) <= 100_000
-    mu, logvar = m(torch.zeros(2, 7, WINDOW))
+    mu, logvar = m(torch.zeros(2, IN_CHANNELS, WINDOW))
     assert mu.shape == (2, 3) and logvar.shape == (2, 3)
 
 
@@ -142,7 +142,7 @@ def test_velocity_measurements_bound_drift():
     biased = a + [0.3, 0.0, 0.0]  # large uncorrected accel bias: drifts badly without any aiding
     calls = []
 
-    def still(C, g, f):
+    def still(C, g, f, axis):
         calls.append(C.shape)
         return np.zeros(3), np.full(3, 0.05)
 

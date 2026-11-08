@@ -50,6 +50,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — tilt channel, CV paused
+- Done: stopped the D-009 CV run after fold 0 stalled near 0.44 m/s (0.49 for zero). Added the tilt channel (D-010). RTS smoother added (`research/baselines/eskf_rts.py`): on train, RPE 0.90 to 0.72 and dropout 2.35 to 2.14, ATE unchanged; classical only.
+- Next: compare `research/results/fold0_tilt.log` with `fold0_no_tilt.log`, then decide whether to run `scripts/train_cv.sh`.
+- Gotchas: C++ RTS and net forward are not ported yet.
 ### 9 Nov — val confirmation, all data in
 - Done: all 17 sequences downloaded; GT frames pass on train and val. Val: L0 ATE 8471 m, L1 ATE 3.99 m, never-moving 4.06 m. L1 blind 5.67 m is worse than never-moving 4.56 m.
 - Next: `scripts/train_cv.sh` is running locally (40 epochs, 5 folds); result in `research/results/cv_report.txt`. Do not start another MPS job until it finishes.

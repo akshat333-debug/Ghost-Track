@@ -14,10 +14,10 @@ def make_vel_fn(weights):
     model.eval()
 
     @torch.no_grad()
-    def vel_fn(C, gyro, accel):
+    def vel_fn(C, gyro, accel, axis):
         mask = (~(np.isnan(gyro).any(axis=1) | np.isnan(accel).any(axis=1))).astype(np.float32)
         g, a = np.nan_to_num(gyro) * mask[:, None], np.nan_to_num(accel) * mask[:, None]
-        x = to_input(C[None], g[None], a[None], mask[None])
+        x = to_input(C[None], g[None], a[None], mask[None], axis[None])
         mu, logvar = model(torch.from_numpy(x))
         return mu[0].numpy().astype(float), np.exp(0.5 * logvar[0].numpy()).astype(float)
 

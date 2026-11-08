@@ -10,6 +10,12 @@ G = 9.81
 TILT_SCALE = np.deg2rad(2.0)  # exponential: matches ESKF tilt error on train (p50 about 1 deg, p95 about 7)
 
 
+def thrust_axis(accel):
+    """Running mean direction of specific force in the sensor frame: a mount-independent body-up estimate."""
+    m = np.cumsum(np.nan_to_num(accel), axis=0)
+    return m / np.linalg.norm(m, axis=1, keepdims=True).clip(1e-9)
+
+
 class Sequence:
     """IMU, attitude and smoothed velocity, all on IMU timestamps."""
 
@@ -24,21 +30,23 @@ class Sequence:
         p = np.c_[[np.convolve(np.pad(p[:, i], 5, mode="edge"), box, "valid") for i in range(3)]].T
         self.v = np.gradient(p, T, axis=0)
         self.n = len(T)
+        self.axis = thrust_axis(accel)
 
 
 def make_batch(seqs, size, rng):
     """Returns x (B, 7, WINDOW) and target velocity (B, 3), both yaw-randomized together."""
     which = rng.integers(0, len(seqs), size)
     gyro, accel, C, v = [np.zeros((size, WINDOW, 3)) for _ in range(2)] + [np.zeros((size, WINDOW, 3, 3)), np.zeros((size, 3))]
+    axis = np.zeros((size, 3))
     for b, s in enumerate(which):
         q = seqs[s]
         end = rng.integers(WINDOW, q.n)
         idx = range(end - WINDOW + 1, end + 1)
-        gyro[b], accel[b], C[b], v[b] = q.gyro[idx], q.accel[idx], q.C[idx], q.v[end]
-    return _features(gyro, accel, C, v, rng)
+        gyro[b], accel[b], C[b], v[b], axis[b] = q.gyro[idx], q.accel[idx], q.C[idx], q.v[end], q.axis[end]
+    return _features(gyro, accel, C, v, axis, rng)
 
 
-def _features(gyro, accel, C, v, rng):
+def _features(gyro, accel, C, v, axis, rng):
     g, a, mask = corrupt(gyro, accel, rng)
     b = len(g)
     tilt = rng.exponential(TILT_SCALE, b)
@@ -47,12 +55,14 @@ def _features(gyro, accel, C, v, rng):
     yaw = R.from_euler("z", rng.uniform(0, 2 * np.pi, b)).as_matrix()
     W = yaw[:, None] @ err @ C
 
-    return to_input(W, g, a, mask), np.einsum("bij,bj->bi", yaw, v).astype(np.float32)
+    return to_input(W, g, a, mask, axis), np.einsum("bij,bj->bi", yaw, v).astype(np.float32)
 
 
-def to_input(W, g, a, mask):
+def to_input(W, g, a, mask, axis):
     """Net input from body-to-world attitude W (B, N, 3, 3). Shared by training and the estimator."""
     gw = np.einsum("bnij,bnj->bni", W, g)
     aw = np.einsum("bnij,bnj->bni", W, a) - mask[..., None] * np.array([0, 0, G])
-    x = np.concatenate([gw / GYRO_SCALE, aw / ACCEL_SCALE, mask[..., None]], axis=2).transpose(0, 2, 1)
+    # Steady flight makes world-frame specific force vertical, so tilt, the main velocity cue, needs its own channel.
+    tw = np.einsum("bnij,bj->bni", W, axis)
+    x = np.concatenate([gw / GYRO_SCALE, aw / ACCEL_SCALE, mask[..., None], tw], axis=2).transpose(0, 2, 1)
     return x.astype(np.float32)

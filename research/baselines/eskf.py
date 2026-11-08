@@ -194,7 +194,7 @@ def apply_corrections(p_out, C_out, nodes, after, before):
 
 
 def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
-    """vel_fn(C, gyro, accel) maps one window to (velocity, per-axis sigma); None runs classical L1.
+    """vel_fn(C, gyro, accel, axis) maps one window to (velocity, per-axis sigma); None runs classical L1.
     smooth=True adds the offline RTS backward pass (L4)."""
     T = (t_ns - t_ns[0]) * 1e-9
     n = len(T)
@@ -213,11 +213,13 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
 
     p_out, C_out = np.zeros((n, 3)), np.zeros((n, 3, 3))
     p_out[0], C_out[0] = flt.p, flt.C
+    f_sum = np.zeros(3)
     nodes = [(0, flt.state(), flt.P.copy(), flt.state(), flt.P.copy(), np.eye(15))]
     for i in range(1, n):
         dt = T[i] - T[i - 1]
         if good[i]:
             flt.propagate(gyro[i], accel[i], dt, scale[i])
+            f_sum += accel[i]
         else:
             # after the final valid row the IMU is dead; short gaps keep velocity
             flt.coast(dt, np.exp(-dt / params["blind_tau"]) if i > last_good else 1.0)
@@ -238,7 +240,7 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
         if vel_fn is not None and good[i] and i >= VEL_WINDOW and i % UPDATE_EVERY == 0:
             C_out[i] = flt.C
             v_net, sigma = vel_fn(C_out[i - VEL_WINDOW + 1:i + 1], gyro[i - VEL_WINDOW + 1:i + 1],
-                                  accel[i - VEL_WINDOW + 1:i + 1])
+                                  accel[i - VEL_WINDOW + 1:i + 1], f_sum / np.linalg.norm(f_sum))
             flt.update_velocity(sigma * params["net_sigma_scale"], v_net)
         p_out[i], C_out[i] = flt.p, flt.C
         if pred is not None:

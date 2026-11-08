@@ -53,3 +53,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Trade-off accepted: AirIO reports gains from body-frame features, and random yaw also discards any "drones fly forward" prior. Revisit only if organizers confirm a fixed mount; compare by grouped CV under D-007.
 - Rejected: body-frame input with rotation augmentation (needs the net to learn invariance from about 25 min of data).
 
+### D-010 · 9 Nov · Add a mount-independent tilt channel to the velocity net (amends D-009)
+- Evidence: fold 0 of the D-009 net (train V1, V2, rooms; test Machine Hall) reached 0.44 m/s per axis against 0.49 for predicting zero, about 10% better after 15 of 40 epochs.
+- Cause: gravity-removed world-frame specific force is nearly vertical in steady flight, so it hides body tilt. Tilt is what predicts drone velocity, which matches AirIO's body-frame finding that D-009 had set aside.
+- Change: add 3 channels, the sensor's running-mean specific-force direction rotated to world. It estimates the body-up axis without knowing the mount, and stays causal.
+- Test: compare fold 0 with and without it before running all folds.
+

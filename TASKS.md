@@ -5,7 +5,6 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 ## Next up
 - [ ] Day 0 — Register team on Google Form before 8 Nov 23:59 (any member)
 - [ ] Day 0 — Send `docs/ORGANIZER_QUESTIONS.md` email to prism@samsung.com (C)
-- [ ] Day 0 — Create private GitHub repo, add all 3 members, push `main` (A)
 - [ ] Day 0 — Download EuRoC (IMU + GT) + TUM-VI room1–6 via `scripts/download_data.sh` (C)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
 
@@ -23,10 +22,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] L3 body-frame velocity net v1 + covariance head (B)
 - [ ] Fuse L3 into ESKF (A)
 - [ ] `scripts/run_heldout.sh`, `scripts/measure_budget.sh` (C)
-- [ ] L5 blind-5 s forecaster candidates (C)
+- [ ] L5 blind-5 s forecaster: constant velocity, damped acceleration, GRU; compare on val (C/B)
 
 ## Day 5 checkpoint (13 Nov)
-- [ ] Freeze best Python pipeline by held-out results. Fallback rule: if L2/L3 don't beat L1, ship L1+L4+L5.
+- [ ] Freeze best Python pipeline by val results (D-006). Fallback rule: if L2/L3 don't beat L1, ship L1+L4+L5.
 
 ## Day 6–9
 - [ ] C++ port ESKF + smoother (A)
@@ -34,6 +33,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] Dockerfile, README, fresh-clone repro (C)
 - [ ] Deck (`CollegeName_TeamName`), architecture diagram (C)
 - [ ] Walkthrough video ≤3 min (C)
+- [ ] Interactive replay demo with degradation toggles, before submission (C, D-005)
 - [ ] Feature freeze 17 Nov; `scripts/make_zip.sh`; dry-run validation (all)
 
 ## Day 10 (18 Nov)
@@ -41,9 +41,15 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ## Done
 - [x] Repo scaffold + team docs (local commit, 8 Nov)
+- [x] GitHub remote `akshat333-debug/Ghost-Track` connected, `main` pushed (9 Nov)
+- [x] Full plan saved to `docs/PLAN.md` (9 Nov)
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — remote + plan
+- Done: remote connected; plan saved to `docs/PLAN.md`; D-005 (full build) and D-006 (select on val only) logged.
+- Next: data download, then loader, degrade, scorer, validator, L0.
+- Gotchas: D-004 said "beat on held-out", which contradicted D-003. D-006 fixes that. Use val for every choice.
 ### 8 Nov — scaffold
 - Done: git repo, folder layout, CLAUDE.md, TASKS/DECISIONS/EXPERIMENTS, docs (flow, architecture, workflow, organizer questions).
 - Next: GitHub remote + push; register; send organizer email; data download.

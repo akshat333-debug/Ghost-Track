@@ -4,7 +4,7 @@
 Input: degraded IMU (200 Hz gyro + accel incl. gravity, EuRoC CSV, ns timestamps). Degradation escalates over time: noise ↑, bias drift ↑, ~2 s dropouts, unknown gravity alignment, then total IMU failure → predict 5 s blind.
 Output: 6-DoF pose per IMU frame (TUM format). Budget: ≤8 MB RAM, ≤20 ms per 1 s of IMU, 1 thread, offline.
 
-## Layers (each kept only if it beats the previous one on held-out)
+## Layers (each kept only if it beats the previous one on val; D-006)
 | layer | what | owner |
 |---|---|---|
 | L0 | naive strapdown, gravity from first ~1 s mean accel | A |

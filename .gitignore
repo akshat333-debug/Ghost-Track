@@ -1,0 +1,12 @@
+research/data/
+submission/
+.code-review-graph/
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+build/
+*.zip
+*.pt
+*.pth
+.DS_Store

@@ -93,6 +93,8 @@ def fetch(archive, uuid):
 
 if __name__ == "__main__":
     ROOT.mkdir(parents=True, exist_ok=True)
+    for stale in ROOT.glob("*.tmp"):  # left behind if a previous run was killed
+        stale.unlink()
     for name, uuid in ARCHIVES.items():
         fetch(name, uuid)
     found = sorted(p.name for p in ROOT.iterdir() if p.is_dir())

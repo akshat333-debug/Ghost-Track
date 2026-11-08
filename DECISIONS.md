@@ -75,3 +75,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Fused ATE at 2.56 s was 3.58 m vs 3.73 m at 1 s, within run-to-run spread on 6 runs. The 3.84 s fused numbers are not comparable: its best checkpoint came from epoch 6, before uncertainty training.
 - Bug fixed: early stopping now ignores warmup epochs, whose uncertainty output is untrained and makes the filter nearly ignore the net.
 
+### D-014 · 9 Nov · Velocity net as built does not ship: it failed the keep rule
+- 5-fold CV, each net on its unseen environment: median ATE 1.75 to 2.60 m, 33% of runs better, worst sequence 165% worse. Waypoint, blind and dropout fail too. Thresholds were fixed in D-007 and are not being changed.
+- Mean ATE improves on MH_01 (4.29 to 3.33), MH_02 (4.70 to 3.13), V1_02 (2.70 to 2.26), V2_01 (1.77 to 1.61). It worsens on all rooms (room1 1.11 to 3.12), MH_03 and V2_03 (1.97 to 3.13). The earlier fold 0 result overstated it.
+- Likely causes, not yet tested: over-confident uncertainty (1-sigma coverage 0.46–0.73, three of five folds below the required 0.60), and the bounded velocity prior being switched off when the net is active.
+- Current submission candidate: classical ESKF + D-012 blind forecast. The `-DPF_NET` code stays but is not the default.
+

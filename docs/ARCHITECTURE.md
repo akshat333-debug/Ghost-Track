@@ -14,6 +14,9 @@ Output: 6-DoF pose per IMU frame (TUM format). Budget: ≤8 MB RAM, ≤20 ms per
 | L4 | offline forward ESKF + backward RTS smoother (legal: processing is offline) | A |
 | L5 | blind-5 s forecaster: const-velocity / damped const-accel / small GRU on last 2–3 s of states; chosen on val | C/B |
 
+## Status (9 Nov)
+L0 and L1 implemented; L4 smoother in Python only; classical L5 in Python and C++. L3 is implemented but failed the keep rule (D-014) and is off by default. L2 and the GRU forecaster are not built.
+
 ## Zero-effort reference
 IMU alone has no absolute correction, so in a small room "never move" is a strong baseline. Every result is compared with `null_ate` / `null_blind` from `research/eval/score.py`. Pure classical IMU-only filtering may not beat it; a learned velocity measurement (L3) is what is expected to.
 

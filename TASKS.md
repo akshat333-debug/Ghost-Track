@@ -20,7 +20,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] L1 ESKF tuned on train (tilt noise); parity with C++ held
 - [ ] Dropout handling + RTS smoother (A)
 - [ ] L2 IMU correction net v1 (B)
-- [ ] L3 velocity net: code done (84k params), full 5-fold CV pending data (B)
+- [ ] L3 velocity net: failed keep rule (D-014); next step awaits team decision (B)
 - [x] Fusion hook: `eskf.run(..., vel_fn=...)`; C++ net forward still pending
 - [x] `scripts/run_heldout.sh`
 - [x] `scripts/measure_budget.sh`
@@ -51,6 +51,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — 5-fold verdict
+- Done: L3 failed the D-007 keep rule (D-014). Do not relax thresholds to pass it.
+- Next: choose between calibrating fusion (no retraining) and a drone-focused rebuild. Candidate pipeline meanwhile is classical ESKF + D-012.
+- Gotchas: any calibration chosen on CV must then be confirmed once on val.
 ### 9 Nov — C++ net forward
 - Done: `research/nets/export_weights.py`, `src/vel_net.hpp`, `-DPF_NET` build. Parity with Python within 1e-3 m on a degraded flight. Net build on room1: 1.77 MB, 8.8 ms per 1 s of IMU, measured under training load.
 - Next: `src/weights.hpp` is generated from the final model, not committed yet. A build without `-DPF_NET` remains the classical fallback.

@@ -110,6 +110,16 @@ class Filter:
         self.update(w_mean - self.bg, H, sigma)
 
 
+def align_to_up(a):
+    """Smallest rotation taking accel direction a to +z. C++ uses the same formula, so yaw matches."""
+    n = a / np.linalg.norm(a)
+    c = n[2]
+    if c < -1 + 1e-9:  # upside down: the axis formula below is singular
+        return np.diag([1.0, -1.0, -1.0])
+    S = skew([n[1], -n[0], 0.0])
+    return np.eye(3) + S + S @ S / (1 + c)
+
+
 def noise_scale(x, nominal_density, dt):
     """Per-row noise inflation from first differences: motion is slow at 200 Hz, noise is not."""
     d = np.nan_to_num(np.diff(x, axis=0, prepend=x[:1]))
@@ -139,18 +149,18 @@ def is_static(w, f, ratio):
 def run(t_ns, gyro, accel, params=PARAMS):
     T = (t_ns - t_ns[0]) * 1e-9
     n = len(T)
-    good = ~np.isnan(gyro[:, 0]) & ~np.isnan(accel[:, 0])
+    good = ~(np.isnan(gyro).any(axis=1) | np.isnan(accel).any(axis=1))
     if not good.any():
         raise ValueError("no valid IMU rows")
     last_good = np.flatnonzero(good)[-1]
-    median_dt = float(np.median(np.diff(T)))
+    median_dt = float(np.median(np.diff(T[:10001])))  # bounded, so the C++ port needs no full-file buffer
     scale = np.maximum(noise_scale(gyro, params["gyro_noise"], median_dt),
                        noise_scale(accel, params["accel_noise"], median_dt))
 
     flt = Filter(params)
     first = good & (T < T[np.argmax(good)] + 1.0)
     a0 = accel[first].mean(axis=0)
-    flt.C = R.align_vectors([[0, 0, 1.0]], [a0 / np.linalg.norm(a0)])[0].as_matrix()
+    flt.C = align_to_up(a0)
 
     p_out, C_out = np.zeros((n, 3)), np.zeros((n, 3, 3))
     p_out[0], C_out[0] = flt.p, flt.C

@@ -33,7 +33,8 @@ training (research/nets, Colab)   ▼
 | self-checks | `python3 -m pytest tests -q` | done |
 | validate a file | `python3 research/eval/validate_format.py <est.txt> <imu.csv>` | done |
 | held-out report | `scripts/run_heldout.sh <method module>` | done |
-| budgets | `scripts/measure_budget.sh` | todo |
+| budgets | `scripts/measure_budget.sh <imu.csv>` | done |
+| run C++ | `g++ -O2 -std=c++17 -o pathfinder src/main.cpp && ./pathfinder <imu.csv> <out.txt>` | done |
 | build submission | `scripts/make_zip.sh` | todo |
 
 ## Submission bundle (slide 17, exact)

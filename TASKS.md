@@ -23,16 +23,17 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] L3 body-frame velocity net v1 + covariance head (B)
 - [ ] Fuse L3 into ESKF (A)
 - [x] `scripts/run_heldout.sh`
-- [ ] `scripts/measure_budget.sh` (C)
+- [x] `scripts/measure_budget.sh`
 - [ ] L5 blind-5 s forecaster: constant velocity, damped acceleration, GRU; compare on val (C/B)
 
 ## Day 5 checkpoint (13 Nov)
 - [ ] Freeze best Python pipeline by val results (D-006). Fallback rule: if L2/L3 don't beat L1, ship L1+L4+L5.
 
 ## Day 6–9
-- [ ] C++ port ESKF + smoother (A)
+- [x] C++ port of ESKF, with Python parity test
+- [ ] C++ RTS smoother (A)
 - [ ] Weight export + C++ net forward + parity test ≤1e-5 (B)
-- [ ] Dockerfile, README, fresh-clone repro (C)
+- [ ] Dockerfile and `src/README.md` written; build and run in Docker not yet tested, repo README and fresh-clone repro pending (C)
 - [ ] Deck (`CollegeName_TeamName`), architecture diagram (C)
 - [ ] Walkthrough video ≤3 min (C)
 - [ ] Interactive replay demo with degradation toggles, before submission (C, D-005)
@@ -49,6 +50,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — C++ port and budgets
+- Done: `src/main.cpp` matches `eskf.py` within 1e-5 m on a degraded flight; 12 tests pass. Budget on room1: 1.38 MB, 3.2 ms per 1 s of IMU. Dockerfile and `src/README.md` added.
+- Next: Docker build test (Docker Desktop must be running); data, then ESKF tuning.
+- Gotchas: any change to `eskf.py` or its PARAMS must be mirrored in `src/main.cpp`, or the parity test fails. Budget numbers are macOS; re-measure in Linux Docker before quoting.
+- Run: `scripts/measure_budget.sh research/data/degraded/room1_s0/mav0/imu0/data.csv`
 ### 9 Nov — first ESKF, zero-effort reference
 - Done: L1 ESKF with tilt, stillness, bounded-velocity and bounded-position pseudo-measurements. Scorer now reports `null_ate` and `null_blind`: error of a tracker that stays at the flown centroid.
 - Finding (room1, 3 seeds, train split, not tuned): ESKF ATE 1.74–2.11 m vs null 1.04 m; blind 2.6–6.8 m vs null 0.8–1.1 m. Better than L0 by three orders of magnitude, but worse than not moving. Small rooms reward doing nothing, so a method is only credible if it beats `null_*`.

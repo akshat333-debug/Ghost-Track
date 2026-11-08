@@ -22,6 +22,7 @@ Propagate with motion prior through the gap; RTS smoother uses post-gap data to 
 
 ## Budgets
 Nets ≤ ~100k params, FP16/INT8 weights compiled into `weights.hpp` (≪1 MB). Net inference at 10–20 Hz windows. C++ target: < 4 MB RSS, < 5 ms per 1 s of IMU.
+Measured so far (ESKF only, no nets, room1 on macOS): 1.38 MB peak RSS, 3.2 ms per 1 s of IMU.
 
 ## Open questions (see docs/ORGANIZER_QUESTIONS.md)
 Memory measurement method; C++ allowed; test data source; checkpoint definition; blind-window timestamps; dropout representation; evo alignment mode.

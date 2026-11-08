@@ -41,3 +41,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 8. **Held-out budget: 3 runs per pipeline** (Day 5, after the C++ port, final). `run_heldout.sh` requires a clean git tree and appends to `docs/HELDOUT_LOG.md`. Any change motivated by a held-out result marks that run contaminated in the log.
 9. **Claims.** Organizers may reuse public sequences we trained on. Deck and README quote held-out numbers only and say so.
 
+### D-008 · 9 Nov · C++ estimator has no external dependencies (refines D-002)
+- `src/main.cpp` hand-writes the fixed-size matrix math instead of using Eigen, so `g++ main.cpp` builds anywhere and the bundle stays one file. Reads the input twice and streams output, so memory does not grow with sequence length.
+- Why safe: `tests/test_cpp_parity.py` holds the port to the Python estimator within 1e-5 m.
+- Fact check of D-002: measured Python RSS on room1 is 68 MB (scipy + numpy), far past the 8 MB budget. C++ measures 1.38 MB.
+- Rejected: Eigen (a vendored dependency for a handful of operations).
+

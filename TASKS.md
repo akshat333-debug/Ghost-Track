@@ -50,6 +50,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — val confirmation, all data in
+- Done: all 17 sequences downloaded; GT frames pass on train and val. Val: L0 ATE 8471 m, L1 ATE 3.99 m, never-moving 4.06 m. L1 blind 5.67 m is worse than never-moving 4.56 m.
+- Next: `scripts/train_cv.sh` is running locally (40 epochs, 5 folds); result in `research/results/cv_report.txt`. Do not start another MPS job until it finishes.
 ### 9 Nov — ESKF tuning and CV runner
 - Done: tilt noise set to 4 m/s^2 (flat optimum at severity 0.5–3), median tilt error now about 1°. Gap attitude uncertainty raised. Net fusion hook added. `scripts/train_cv.sh` trains all folds and applies the D-007 keep rule via `research/eval/run_cv.py`. Tried and removed: holding the last angular rate through gaps (no gain).
 - Finding: tightening velocity or position priors drives ATE to the never-moving value (about 1.27 m median on 6 train sequences). Classical IMU-only cannot beat it; do not tune further for ATE.

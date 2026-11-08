@@ -50,6 +50,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — tilt test result
+- Done: D-011. Tilt channel barely helps. Velocity accuracy equals clean-input accuracy, so more denoising will not help. ATE on the unseen hall improves over ESKF and never-moving on MH_01 and MH_02, worse on MH_03.
+- Next: test a longer input window (2–3 s) on fold 0 before running all folds. Fusion should be disabled in the blind window planning: it does not help there.
 ### 9 Nov — tilt channel, CV paused
 - Done: stopped the D-009 CV run after fold 0 stalled near 0.44 m/s (0.49 for zero). Added the tilt channel (D-010). RTS smoother added (`research/baselines/eskf_rts.py`): on train, RPE 0.90 to 0.72 and dropout 2.35 to 2.14, ATE unchanged; classical only.
 - Next: compare `research/results/fold0_tilt.log` with `fold0_no_tilt.log`, then decide whether to run `scripts/train_cv.sh`.

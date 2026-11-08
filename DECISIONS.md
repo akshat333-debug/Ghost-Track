@@ -59,3 +59,8 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Change: add 3 channels, the sensor's running-mean specific-force direction rotated to world. It estimates the body-up axis without knowing the mount, and stays causal.
 - Test: compare fold 0 with and without it before running all folds.
 
+### D-011 · 9 Nov · Result of the D-010 test: tilt channel is not the fix (no change to code)
+- Fold 0 test RMSE 0.437 m/s with tilt vs 0.445 without, against 0.49 for zero. The hypothesis behind D-010 was mostly wrong. The channel stays because it costs nothing, but it earned no credit.
+- Same model on clean input: 0.424 m/s. So sensor corruption is not the limit; the limit is how much velocity information a 1 s window holds, and generalization to an unseen environment (train 0.255, test 0.437).
+- Fused into the ESKF on the unseen Machine Hall: mean ATE 4.30 to 3.73 m, never-moving 4.37 m. Blind gets worse (3.11 to 3.44 m).
+

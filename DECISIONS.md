@@ -64,3 +64,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Same model on clean input: 0.424 m/s. So sensor corruption is not the limit; the limit is how much velocity information a 1 s window holds, and generalization to an unseen environment (train 0.255, test 0.437).
 - Fused into the ESKF on the unseen Machine Hall: mean ATE 4.30 to 3.73 m, never-moving 4.37 m. Blind gets worse (3.11 to 3.44 m).
 
+### D-012 · 9 Nov · Blind 5 s: decaying coast pulled toward the last 20 s of flown positions (L5 classical candidate)
+- Chosen on train (11 sequences, 3 seeds) from: hold, damped velocity at 3 time constants, pull toward all-flight, 20 s, 10 s and 5 s centroids. 20 s had the best balance: mean 2.72 to 2.16 m, median 1.85 to 1.52 m.
+- Val confirmation: blind 5.67 to 4.71 m, 5 of 6 runs better. Never-moving reference is 4.56 m, so this nearly closes the gap and does not beat it.
+- GRU forecaster (D-005) still to be built and must beat this on val.
+- Why this is honest and not leakage: it uses only our own estimated positions before failure.
+

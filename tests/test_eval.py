@@ -137,7 +137,7 @@ def test_velnet_fits_capacity_and_shapes():
 
 
 def test_velocity_measurements_bound_drift():
-    from research.baselines.eskf import PARAMS, run as eskf_run
+    from research.baselines.eskf import PARAMS, VEL_WINDOW, run as eskf_run
     t, w, a, _ = flight(120)
     biased = a + [0.3, 0.0, 0.0]  # large uncorrected accel bias: drifts badly without any aiding
     calls = []
@@ -149,7 +149,7 @@ def test_velocity_measurements_bound_drift():
     weak = dict(PARAMS, vel_sigma=1e3, pos_sigma=1e4)
     free, _ = eskf_run(t, w, biased, weak)
     held, _ = eskf_run(t, w, biased, weak, vel_fn=still)
-    assert calls and calls[0] == (200, 3, 3)
+    assert calls and calls[0] == (VEL_WINDOW, 3, 3)
     assert np.abs(held).max() < np.abs(free).max() / 5
 
 

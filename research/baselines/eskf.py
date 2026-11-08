@@ -6,13 +6,17 @@ State order in the error vector: dp, dv, dtheta, dbg, dba.
 
 Interface matches naive.run, so the manifest (failure time, dropouts) cannot leak into the estimator.
 """
+import os
+from collections import deque
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 G = 9.81
 UPDATE_EVERY = 20  # samples; pseudo-measurements run at about 10 Hz
+CENTROID_NODES = 200  # about 20 s of positions at that rate
 STATIC_WINDOW = 100  # samples
-VEL_WINDOW = 200  # samples; must equal research.nets.vel_net.WINDOW
+VEL_WINDOW = int(os.environ.get("PF_WINDOW", 200))  # samples; must equal research.nets.vel_net.WINDOW
 
 PARAMS = {
     "gyro_noise": 1.7e-4, "accel_noise": 2.0e-3,   # per sqrt(Hz)
@@ -22,7 +26,8 @@ PARAMS = {
     "pos_sigma": 15.0,      # m, indoor-extent prior per update
     "static_vel_sigma": 0.1,
     "static_ratio": 3.0,    # window variance / high-frequency noise variance
-    "blind_tau": 2.0,       # s, velocity decay once the IMU has failed
+    "blind_tau": 1.0,       # s, velocity decay once the IMU has failed
+    "blind_pull_tau": 1.0,  # s, how fast the blind forecast pulls toward the recent flown area
     "net_sigma_scale": 1.0,  # inflation of the velocity net's reported uncertainty
     "gap_att_q": 0.3,       # rad^2/s, attitude uncertainty growth with no gyro
     "gap_vel_q": 1.0,       # (m/s)^2/s, velocity uncertainty growth with no accel
@@ -159,6 +164,13 @@ def is_static(w, f, ratio):
     return True
 
 
+def blind_position(t, p0, v0, centre, c):
+    """Decaying coast from the failure point, pulled toward where the flight has recently been."""
+    tau = c["blind_tau"]
+    pull = 1 - np.exp(-t / c["blind_pull_tau"])
+    return (p0 + tau * (1 - np.exp(-t / tau)) * v0) * (1 - pull) + centre * pull
+
+
 def boxminus(a, b):
     """Error state taking nominal b to a, in the filter's own convention."""
     return np.r_[a[0] - b[0], a[1] - b[1], R.from_matrix(b[2].T @ a[2]).as_rotvec(), a[3] - b[3], a[4] - b[4]]
@@ -214,6 +226,7 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
     p_out, C_out = np.zeros((n, 3)), np.zeros((n, 3, 3))
     p_out[0], C_out[0] = flt.p, flt.C
     f_sum = np.zeros(3)
+    recent, blind = deque(maxlen=CENTROID_NODES), None
     nodes = [(0, flt.state(), flt.P.copy(), flt.state(), flt.P.copy(), np.eye(15))]
     for i in range(1, n):
         dt = T[i] - T[i - 1]
@@ -223,7 +236,13 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
         else:
             # after the final valid row the IMU is dead; short gaps keep velocity
             flt.coast(dt, np.exp(-dt / params["blind_tau"]) if i > last_good else 1.0)
+            if i > last_good:
+                if blind is None:
+                    blind = (flt.p - flt.v * dt, flt.v.copy(), np.mean(recent, axis=0) if recent else flt.p.copy())
+                flt.p = blind_position(T[i] - T[last_good], *blind, params)
         pred = (flt.state(), flt.P.copy()) if smooth and i % UPDATE_EVERY == 0 else None
+        if good[i] and i % UPDATE_EVERY == 0:
+            recent.append(flt.p.copy())
         if good[i] and i >= STATIC_WINDOW and i % UPDATE_EVERY == 0 and good[i - STATIC_WINDOW:i + 1].all():
             w_win, f_win = gyro[i - STATIC_WINDOW:i + 1], accel[i - STATIC_WINDOW:i + 1]
             f_mean = f_win[-UPDATE_EVERY:].mean(axis=0)

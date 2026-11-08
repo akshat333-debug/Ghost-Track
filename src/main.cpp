@@ -92,7 +92,8 @@ const double G = 9.81;
 const int UPDATE_EVERY = 20, STATIC_WINDOW = 100;
 const double GYRO_NOISE = 1.7e-4, ACCEL_NOISE = 2.0e-3, GYRO_WALK = 1.9e-5, ACCEL_WALK = 3.0e-3;
 const double TILT_SIGMA = 4.0, VEL_SIGMA = 1.5, POS_SIGMA = 15.0, STATIC_VEL_SIGMA = 0.1;
-const double STATIC_RATIO = 3.0, BLIND_TAU = 2.0;
+const double STATIC_RATIO = 3.0, BLIND_TAU = 1.0, BLIND_PULL_TAU = 1.0;
+const int CENTROID_NODES = 200;
 
 struct Filter {
     V3 p, v, bg, ba;
@@ -329,7 +330,11 @@ int main(int argc, char** argv) {
     const int W = STATIC_WINDOW + 1;
     double ring_g[W][3], ring_a[W][3], win_g[W][3], win_a[W][3];
     long good_run = 0, i = 0;
-    double T_prev = 0;
+    double T_prev = 0, T_last_good = 0;
+    double recent[CENTROID_NODES][3];
+    int recent_n = 0, recent_at = 0;
+    bool blind_started = false;
+    V3 blind_p0, blind_v0, blind_centre;
 
     std::rewind(in);
     while (std::fgets(line, sizeof line, in)) {
@@ -346,6 +351,21 @@ int main(int argc, char** argv) {
                 s.propagate(v3(v[0], v[1], v[2]), v3(v[3], v[4], v[5]), dt, scale);
             } else {
                 s.coast(dt, i > last_good ? std::exp(-dt / BLIND_TAU) : 1.0);
+                if (i > last_good) {
+                    if (!blind_started) {
+                        blind_started = true;
+                        blind_p0 = s.p - dt * s.v;
+                        blind_v0 = s.v;
+                        blind_centre = recent_n ? mean(recent, 0, recent_n) : s.p;
+                    }
+                    double tb = T - T_last_good, pull = 1 - std::exp(-tb / BLIND_PULL_TAU);
+                    s.p = (1 - pull) * (blind_p0 + (BLIND_TAU * (1 - std::exp(-tb / BLIND_TAU))) * blind_v0) + pull * blind_centre;
+                }
+            }
+            if (good && i % UPDATE_EVERY == 0) {
+                for (int a = 0; a < 3; a++) recent[recent_at][a] = s.p[a][0];
+                recent_at = (recent_at + 1) % CENTROID_NODES;
+                recent_n = std::min(recent_n + 1, CENTROID_NODES);
             }
             if (good && i >= STATIC_WINDOW && i % UPDATE_EVERY == 0 && good_run >= W) {
                 for (int k = 0; k < W; k++) {
@@ -366,6 +386,7 @@ int main(int argc, char** argv) {
             }
         }
         write_pose(out, t, s);
+        if (good) T_last_good = T;
         T_prev = T;
         i++;
     }

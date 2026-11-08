@@ -24,7 +24,8 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] Fusion hook: `eskf.run(..., vel_fn=...)`; C++ net forward still pending
 - [x] `scripts/run_heldout.sh`
 - [x] `scripts/measure_budget.sh`
-- [ ] L5 blind-5 s forecaster: constant velocity, damped acceleration, GRU; compare on val (C/B)
+- [x] L5 classical blind forecast (D-012), in Python and C++
+- [ ] L5 GRU forecaster; must beat D-012 on val (B)
 
 ## Day 5 checkpoint (13 Nov)
 - [ ] Freeze best Python pipeline by val results (D-006). Fallback rule: if L2/L3 don't beat L1, ship L1+L4+L5.
@@ -50,6 +51,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — blind forecast
+- Done: D-012 in `eskf.py` and `src/main.cpp`, parity test passes. Val blind 5.67 to 4.71 m (never-moving 4.56).
+- In progress: window-length test on fold 0. `PF_WINDOW` env override stays until a length is chosen; default 200 is unchanged.
 ### 9 Nov — tilt test result
 - Done: D-011. Tilt channel barely helps. Velocity accuracy equals clean-input accuracy, so more denoising will not help. ATE on the unseen hall improves over ESKF and never-moving on MH_01 and MH_02, worse on MH_03.
 - Next: test a longer input window (2–3 s) on fold 0 before running all folds. Fusion should be disabled in the blind window planning: it does not help there.

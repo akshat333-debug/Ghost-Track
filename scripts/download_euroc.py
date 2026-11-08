@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Fetch only EuRoC IMU + ground-truth CSVs (about 25 GB of zips would otherwise be needed).
 
-Uses HTTP range reads on the official ETH archives: skips the .bag files, decompresses
-each inner sequence zip to a temp file, extracts two CSVs, deletes the temp file.
+Uses HTTP range reads: skips the .bag files, decompresses each inner sequence zip to a temp
+file, extracts two CSVs, deletes the temp file. Bytes come from a Hugging Face copy because ETH
+rate-limits bulk reads (HTTP 429); every member's CRC is first checked against the official ETH
+directory, and zipfile verifies the CRC while reading, so the data is ETH's byte for byte.
 """
 import pathlib
 import shutil
@@ -13,6 +15,7 @@ import urllib.request
 import zipfile
 
 ETH = "https://www.research-collection.ethz.ch/server/api/core/bitstreams/{}/content"
+MIRROR = "https://huggingface.co/datasets/GlowBond/EuRoC_MAV_Dataset/resolve/main/{}.zip"
 ARCHIVES = {
     "machine_hall": "7b2419c1-62b5-4714-b7f8-485e5fe3e5fe",
     "vicon_room1": "02ecda9a-298f-498b-970c-b7c44334d880",
@@ -70,7 +73,11 @@ class RangeFile:
 
 
 def fetch(archive, uuid):
-    outer = zipfile.ZipFile(RangeFile(ETH.format(uuid)))
+    outer = zipfile.ZipFile(RangeFile(MIRROR.format(archive)))
+    official = zipfile.ZipFile(RangeFile(ETH.format(uuid)))
+    sig = lambda z: {i.filename: (i.CRC, i.file_size) for i in z.infolist() if i.filename.endswith(".zip")}
+    if sig(outer) != sig(official):
+        raise RuntimeError(f"{archive}: mirror does not match the official ETH archive")
     for info in outer.infolist():
         if not info.filename.endswith(".zip") or "/._" in info.filename:
             continue

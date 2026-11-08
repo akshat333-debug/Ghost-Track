@@ -16,7 +16,7 @@ from research.eval.validate_format import validate
 from research.io_euroc import load_seq, write_imu_csv, write_tum
 from research.split import sequences
 
-KEYS = ["ate", "ate_origin", "ate_rot_deg", "rpe_1s", "waypoint", "blind", "blind_end", "dropout", "proxy60"]
+KEYS = ["ate", "ate_origin", "ate_rot_deg", "rpe_1s", "waypoint", "blind", "blind_end", "dropout", "null_ate", "null_blind", "proxy60"]
 
 
 def evaluate(run, split, seeds, severity=1.0):

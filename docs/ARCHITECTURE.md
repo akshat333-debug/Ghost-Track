@@ -14,6 +14,9 @@ Output: 6-DoF pose per IMU frame (TUM format). Budget: ≤8 MB RAM, ≤20 ms per
 | L4 | offline forward ESKF + backward RTS smoother (legal: processing is offline) | A |
 | L5 | blind-5 s forecaster: const-velocity / damped const-accel / small GRU on last 2–3 s of states; chosen on val | C/B |
 
+## Zero-effort reference
+IMU alone has no absolute correction, so in a small room "never move" is a strong baseline. Every result is compared with `null_ate` / `null_blind` from `research/eval/score.py`. Pure classical IMU-only filtering may not beat it; a learned velocity measurement (L3) is what is expected to.
+
 ## Dropout handling
 Propagate with motion prior through the gap; RTS smoother uses post-gap data to bend the gap trajectory back. Output still has one pose per input IMU timestamp (pending organizer answer on whether missing rows need poses).
 

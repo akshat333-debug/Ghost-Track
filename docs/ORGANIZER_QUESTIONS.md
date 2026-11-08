@@ -3,7 +3,7 @@
 Send to prism@samsung.com. Log answers below with date.
 
 ---
-**Subject:** XR Hackathon 2026 – Track 3 (Path Finder) clarification questions – <CollegeName>_ZeroDrift
+**Subject:** XR Hackathon 2026 – Track 3 (Path Finder) clarification questions – VITVellore_ZeroDrift
 
 Hello PRISM team,
 
@@ -21,7 +21,7 @@ We are registered for Track 3 (Path Finder: Trajectory Estimation Under Sensor D
 10. **Demo video length:** general rules say max 3 min, the timeline says 5 min, Track 3 says 2–3 min. Which applies?
 
 Thank you,
-<Name>, <CollegeName>_ZeroDrift
+Team Zero Drift (VITVellore_ZeroDrift), Vellore Institute of Technology, Vellore
 
 ---
 ## Answers received

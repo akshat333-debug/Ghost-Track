@@ -69,5 +69,8 @@ def score(t_ns, p, q, gt, manifest):
     for s, e in manifest["dropouts_ns"]:
         in_drop |= (ts >= s * 1e-9) & (ts < e * 1e-9)
     out["dropout"] = _rmse(err[in_drop])
+    # Zero-effort reference: a tracker that never moves from the flown centroid. Must be beaten to claim skill.
+    still = a.positions_xyz - a.positions_xyz[flown].mean(axis=0)
+    out["null_ate"], out["null_blind"] = _rmse(still), _rmse(still[blind])
     out["proxy60"] = float(sum(mx * np.exp(-out[k] / scale) for k, (mx, scale) in PROXY.items()))
     return out

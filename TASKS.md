@@ -3,7 +3,7 @@
 Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C++, B nets, C data/eval/docs.
 
 ## Next up
-- [ ] Day 0 — Send `docs/ORGANIZER_QUESTIONS.md` email to prism@samsung.com (C)
+- [ ] Day 0 — Send organizer email: Gmail draft ready, a member must review and press send (C)
 - [ ] Day 0 — Download EuRoC + TUM-VI CSVs: `scripts/download_euroc.py`, `scripts/download_tumvi.sh`; each teammate runs once (in progress)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
 
@@ -17,7 +17,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
 
 ## Day 2–4
-- [ ] L1 ESKF: p,v,q,bg,ba; gravity init; adaptive Q (A)
+- [ ] L1 ESKF: first version in `research/baselines/eskf.py`, needs tuning on train (A)
 - [ ] Dropout handling + RTS smoother (A)
 - [ ] L2 IMU correction net v1 (B)
 - [ ] L3 body-frame velocity net v1 + covariance head (B)
@@ -49,6 +49,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — first ESKF, zero-effort reference
+- Done: L1 ESKF with tilt, stillness, bounded-velocity and bounded-position pseudo-measurements. Scorer now reports `null_ate` and `null_blind`: error of a tracker that stays at the flown centroid.
+- Finding (room1, 3 seeds, train split, not tuned): ESKF ATE 1.74–2.11 m vs null 1.04 m; blind 2.6–6.8 m vs null 0.8–1.1 m. Better than L0 by three orders of magnitude, but worse than not moving. Small rooms reward doing nothing, so a method is only credible if it beats `null_*`.
+- Next: when data lands, compare against null on every train sequence. Do not simply tighten `pos_sigma` to room size: that collapses to null and would fail in the larger Machine Hall.
+- Run: `python3 -c` smoke as in the Run section of PROJECT_FLOW, or `python3 -m research.eval.run_split --method research.baselines.eskf --split train`.
 ### 9 Nov — real-data check on room1
 - Done: GT frame confirmed on room1 (gyro vs GT-derived rate correlation ≥0.99); L0 attitude drift 2.5° over 130 s on clean data, so the integrator is right. Scorer fixed for 120 Hz mocap: match count and the 1 s RPE delta no longer assume 200 Hz.
 - Next: when downloads finish, `python3 -m research.eval.check_gt train val`, then L0 on val, then L1 ESKF.

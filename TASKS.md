@@ -5,15 +5,15 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 ## Next up
 - [ ] Day 0 — Register team on Google Form before 8 Nov 23:59 (any member)
 - [ ] Day 0 — Send `docs/ORGANIZER_QUESTIONS.md` email to prism@samsung.com (C)
-- [ ] Day 0 — Download EuRoC (IMU + GT) + TUM-VI room1–6 via `scripts/download_data.sh` (C)
+- [ ] Day 0 — Download EuRoC + TUM-VI CSVs: `scripts/download_euroc.py`, `scripts/download_tumvi.sh`; each teammate runs once (in progress)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
 
 ## Day 1 (9 Nov)
-- [ ] `research/io_euroc.py` loader (IMU csv + GT) + TUM writer (A)
-- [ ] L0 naive strapdown baseline `research/baselines/naive.py` (A)
+- [x] `research/io_euroc.py` loader (IMU csv + GT) + TUM writer (A)
+- [x] L0 naive strapdown baseline `research/baselines/naive.py` (A)
 - [ ] Training window sampler + dataset class (B)
-- [ ] `research/degrade.py` degradation simulator (C)
-- [ ] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
+- [x] `research/degrade.py` degradation simulator (C)
+- [x] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
 
 ## Day 2–4
 - [ ] L1 ESKF: p,v,q,bg,ba; gravity init; adaptive Q (A)
@@ -21,7 +21,8 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] L2 IMU correction net v1 (B)
 - [ ] L3 body-frame velocity net v1 + covariance head (B)
 - [ ] Fuse L3 into ESKF (A)
-- [ ] `scripts/run_heldout.sh`, `scripts/measure_budget.sh` (C)
+- [x] `scripts/run_heldout.sh`
+- [ ] `scripts/measure_budget.sh` (C)
 - [ ] L5 blind-5 s forecaster: constant velocity, damped acceleration, GRU; compare on val (C/B)
 
 ## Day 5 checkpoint (13 Nov)
@@ -46,6 +47,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — eval harness + L0
+- Done: loader, TUM writer, degradation simulator, evo scorer with per-tier errors, format validator, L0, held-out guard, 7 self-checks passing on synthetic flights.
+- Next: real-data run of L0 on val, ground-truth frame check, then L1 ESKF.
+- Gotchas: `degrade` cuts each sequence at failure + 5 s so the blind window is mid-flight. Sensor mounting is randomized, so nets need rotation handling or augmentation. `proxy60` uses our own scales: rank our methods with it, never quote it. Blind and dropout rows are NaN until organizers answer Q6/Q7.
+- Run: `python3 -m pytest tests -q`
 ### 9 Nov — remote + plan
 - Done: remote connected; plan saved to `docs/PLAN.md`; D-005 (full build) and D-006 (select on val only) logged.
 - Next: data download, then loader, degrade, scorer, validator, L0.

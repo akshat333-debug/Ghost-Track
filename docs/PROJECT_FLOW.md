@@ -26,11 +26,13 @@ training (research/nets, Colab)   ▼
 ## How to run (fills in as scripts land)
 | step | command | status |
 |---|---|---|
-| download data | `scripts/download_data.sh` | todo |
-| degrade a sequence | `python research/degrade.py --seq MH_01 --seed 0` | todo |
+| download data | `python3 scripts/download_euroc.py` and `scripts/download_tumvi.sh` (CSV only, about 30 min, resumes) | done |
+| degrade a sequence | `python3 -m research.degrade --seq MH_01 --seed 0` | done |
 | run estimator (py) | `python research/baselines/eskf.py <imu.csv> <out.txt>` | todo |
-| score | `python research/eval/score.py <est.txt> <gt>` | todo |
-| held-out report | `scripts/run_heldout.sh` | todo |
+| evaluate a method | `python3 -m research.eval.run_split --method research.baselines.naive --split val` | done |
+| self-checks | `python3 -m pytest tests -q` | done |
+| validate a file | `python3 research/eval/validate_format.py <est.txt> <imu.csv>` | done |
+| held-out report | `scripts/run_heldout.sh <method module>` | done |
 | budgets | `scripts/measure_budget.sh` | todo |
 | build submission | `scripts/make_zip.sh` | todo |
 

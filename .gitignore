@@ -10,3 +10,5 @@ build/
 *.pt
 *.pth
 .DS_Store
+.pytest_cache/
+research/results/

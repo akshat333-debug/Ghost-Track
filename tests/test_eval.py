@@ -160,3 +160,19 @@ def test_keep_rule_is_strict():
     assert keep_rule(base * 0.8, base, seqs)["keep"]
     assert not keep_rule(base * 0.95, base, seqs)["keep"], "below the 10% gain threshold"
     assert not keep_rule(np.array([5.0, 5.0, 13.0, 13.0]), base, seqs)["keep"], "one sequence worse by 30%"
+
+
+def test_smoother_leaves_a_consistent_trajectory():
+    from research.baselines.eskf import run as eskf_run
+    t, w, a, gt = flight(60)
+    bad = a.copy()
+    bad[4000:4400] = np.nan
+    w2 = w.copy()
+    w2[4000:4400] = np.nan
+    p_f, q_f = eskf_run(t, w2, bad)
+    p_s, q_s = eskf_run(t, w2, bad, smooth=True)
+    assert np.isfinite(p_s).all() and np.allclose(np.linalg.norm(q_s, axis=1), 1)
+    step = np.linalg.norm(np.diff(p_s, axis=0), axis=1)
+    assert step.max() < 0.2, "smoothing must not introduce position jumps"
+    assert np.abs(p_s - p_f).max() > 1e-4, "backward pass should change something"
+    assert np.allclose(p_s[-1], p_f[-1]), "last pose has no future data, so it must not move"

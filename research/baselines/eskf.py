@@ -48,6 +48,10 @@ class Filter:
         self.C = np.eye(3)
         self.bg, self.ba = np.zeros(3), np.zeros(3)
         self.P = np.diag([1e-6] * 3 + [0.5**2] * 3 + [0.05**2] * 3 + [0.02**2] * 3 + [0.2**2] * 3)
+        self.Phi = np.eye(15)  # transition since the last smoother node
+
+    def state(self):
+        return self.p.copy(), self.v.copy(), self.C.copy(), self.bg.copy(), self.ba.copy()
 
     def propagate(self, w_m, f_m, dt, scale):
         c = self.c
@@ -65,6 +69,7 @@ class Filter:
                   np.full(3, (c["accel_walk"] * scale) ** 2)] * dt
         self.P = F @ self.P @ F.T
         self.P[np.diag_indices(15)] += q
+        self.Phi = F @ self.Phi
         self.p = self.p + self.v * dt + 0.5 * acc * dt**2
         self.v = self.v + acc * dt
         self.C = self.C @ exp_so3(w * dt)
@@ -77,6 +82,7 @@ class Filter:
         F = np.eye(15)
         F[:3, 3:6] = np.eye(3) * dt
         self.P = F @ self.P @ F.T
+        self.Phi = F @ self.Phi
         self.P[np.diag_indices(15)] += np.r_[np.zeros(3), np.full(3, c["gap_vel_q"]), np.full(3, c["gap_att_q"]),
                                              np.zeros(6)] * dt
 
@@ -153,8 +159,43 @@ def is_static(w, f, ratio):
     return True
 
 
-def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None):
-    """vel_fn(C, gyro, accel) maps one window to (velocity, per-axis sigma); None runs classical L1."""
+def boxminus(a, b):
+    """Error state taking nominal b to a, in the filter's own convention."""
+    return np.r_[a[0] - b[0], a[1] - b[1], R.from_matrix(b[2].T @ a[2]).as_rotvec(), a[3] - b[3], a[4] - b[4]]
+
+
+def rts(nodes):
+    """Backward pass over nodes (i, x_pred, P_pred, x_filt, P_filt, Phi). Returns correction at each node."""
+    N = len(nodes)
+    # correction relative to the filtered state, and relative to the predicted state at the same node
+    after, before = [np.zeros(15) for _ in range(N)], [np.zeros(15) for _ in range(N)]
+    before[-1] = boxminus(nodes[-1][3], nodes[-1][1])
+    for k in range(N - 2, -1, -1):
+        _, xp, _, xf, _, _ = nodes[k]
+        _, _, Pp1, _, _, Phi1 = nodes[k + 1]
+        G = np.linalg.solve(Pp1 + 1e-9 * np.eye(15), Phi1 @ nodes[k][4]).T
+        after[k] = G @ before[k + 1]
+        # the smoothed state at k expressed against the prediction at k
+        before[k] = boxminus(xf, xp) + after[k]
+    return after, before
+
+
+def apply_corrections(p_out, C_out, nodes, after, before):
+    """Spreads node corrections over every output row so the trajectory stays continuous."""
+    p, C = p_out.copy(), C_out.copy()
+    for k in range(len(nodes) - 1):
+        i0, i1 = nodes[k][0], nodes[k + 1][0]
+        for i in range(i0, i1):
+            lam = (i - i0) / (i1 - i0)
+            d = (1 - lam) * after[k] + lam * before[k + 1]
+            p[i] = p_out[i] + d[:3]
+            C[i] = C_out[i] @ exp_so3(d[6:9])
+    return p, C
+
+
+def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
+    """vel_fn(C, gyro, accel) maps one window to (velocity, per-axis sigma); None runs classical L1.
+    smooth=True adds the offline RTS backward pass (L4)."""
     T = (t_ns - t_ns[0]) * 1e-9
     n = len(T)
     good = ~(np.isnan(gyro).any(axis=1) | np.isnan(accel).any(axis=1))
@@ -172,6 +213,7 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None):
 
     p_out, C_out = np.zeros((n, 3)), np.zeros((n, 3, 3))
     p_out[0], C_out[0] = flt.p, flt.C
+    nodes = [(0, flt.state(), flt.P.copy(), flt.state(), flt.P.copy(), np.eye(15))]
     for i in range(1, n):
         dt = T[i] - T[i - 1]
         if good[i]:
@@ -179,6 +221,7 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None):
         else:
             # after the final valid row the IMU is dead; short gaps keep velocity
             flt.coast(dt, np.exp(-dt / params["blind_tau"]) if i > last_good else 1.0)
+        pred = (flt.state(), flt.P.copy()) if smooth and i % UPDATE_EVERY == 0 else None
         if good[i] and i >= STATIC_WINDOW and i % UPDATE_EVERY == 0 and good[i - STATIC_WINDOW:i + 1].all():
             w_win, f_win = gyro[i - STATIC_WINDOW:i + 1], accel[i - STATIC_WINDOW:i + 1]
             f_mean = f_win[-UPDATE_EVERY:].mean(axis=0)
@@ -198,4 +241,9 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None):
                                   accel[i - VEL_WINDOW + 1:i + 1])
             flt.update_velocity(sigma * params["net_sigma_scale"], v_net)
         p_out[i], C_out[i] = flt.p, flt.C
+        if pred is not None:
+            nodes.append((i, *pred, flt.state(), flt.P.copy(), flt.Phi.copy()))
+            flt.Phi = np.eye(15)
+    if smooth:
+        p_out, C_out = apply_corrections(p_out, C_out, nodes, *rts(nodes))
     return p_out, R.from_matrix(C_out).as_quat()

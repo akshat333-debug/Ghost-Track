@@ -49,6 +49,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — real-data check on room1
+- Done: GT frame confirmed on room1 (gyro vs GT-derived rate correlation ≥0.99); L0 attitude drift 2.5° over 130 s on clean data, so the integrator is right. Scorer fixed for 120 Hz mocap: match count and the 1 s RPE delta no longer assume 200 Hz.
+- Next: when downloads finish, `python3 -m research.eval.check_gt train val`, then L0 on val, then L1 ESKF.
+- Gotchas: `ate_rot_deg` is meaningless when position has diverged, because SE(3) alignment comes from positions; judge attitude by relative rotation error. Don't hardcode gravity: room1 world-z specific force averages 9.77 m/s², so L1 should estimate magnitude and accel bias. TUM-VI starts handheld and moving, so a static-start assumption fails.
 ### 9 Nov — anti-overfitting protocol
 - Done: D-007 logged; held-out runs now need a clean tree, use seeds 100–102, and append to `docs/HELDOUT_LOG.md`; test blocks nets from importing `degrade.py`.
 - Next: real-data L0, then L1 ESKF. Team B must build `augment.py` and the CV harness before the first training run.

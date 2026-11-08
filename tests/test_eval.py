@@ -105,3 +105,9 @@ def test_nets_do_not_train_on_the_evaluation_generator():
     for f in [root / "augment.py", *(root / "nets").rglob("*.py")]:
         if f.exists():
             assert not re.search(r"\bdegrade\b", f.read_text()), f"{f} references degrade"
+
+
+def test_slower_ground_truth_is_accepted():
+    t, _, _, gt = flight()
+    slow = (gt[0][::2], gt[1][::2], gt[2][::2])  # 100 Hz ground truth, 200 Hz estimate
+    assert score(t, gt[1], gt[2], slow, manifest(t))["ate"] < 1e-6

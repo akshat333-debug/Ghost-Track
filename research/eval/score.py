@@ -36,8 +36,10 @@ def score(t_ns, p, q, gt, manifest):
     gt_q = (R.from_quat(gt_q) * mount.inv()).as_quat()  # GT orientation of the mounted sensor
     a, b = sync.associate_trajectories(_traj(gt_t, gt_p, gt_q), _traj(t_ns, p, q), max_diff=0.01)
     ts = a.timestamps
-    if len(ts) < 0.9 * len(t_ns):
-        raise ValueError(f"only {len(ts)} of {len(t_ns)} poses matched ground truth")
+    # mocap can be slower than the IMU (TUM-VI 120 Hz vs 200 Hz), so compare against the slower stream
+    expected = min(len(t_ns), int(((gt_t >= t_ns[0]) & (gt_t <= t_ns[-1])).sum()))
+    if len(ts) < 0.9 * expected:
+        raise ValueError(f"only {len(ts)} of {expected} expected poses matched ground truth")
 
     aligned = copy.deepcopy(b)
     aligned.align(a)
@@ -46,7 +48,8 @@ def score(t_ns, p, q, gt, manifest):
     origin = copy.deepcopy(b)
     origin.align_origin(a)
     out["ate_origin"] = _ape(a, origin)
-    rpe = metrics.RPE(metrics.PoseRelation.translation_part, delta=200, delta_unit=metrics.Unit.frames,
+    rpe = metrics.RPE(metrics.PoseRelation.translation_part, delta=int(round(1 / np.median(np.diff(ts)))),
+                      delta_unit=metrics.Unit.frames,
                       all_pairs=False)
     rpe.process_data((a, b))
     out["rpe_1s"] = float(rpe.get_statistic(metrics.StatisticsType.rmse))

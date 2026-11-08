@@ -9,6 +9,11 @@ SPLITS = {
 }
 
 
+# D-007: grouped CV inside train. Each fold leaves out a whole environment.
+FOLDS = [["MH_01", "MH_02", "MH_03"], ["V1_01", "V1_02"], ["V2_01", "V2_03"], ["room1", "room2"], ["room3", "room4"]]
+assert sorted(sum(FOLDS, [])) == sorted(SPLITS["train"])
+
+
 def sequences(split):
     if split == "heldout" and os.environ.get("PF_HELDOUT") != "1":
         raise PermissionError("held-out is report-only: run scripts/run_heldout.sh (D-003, D-006)")

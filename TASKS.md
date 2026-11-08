@@ -10,9 +10,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 ## Day 1 (9 Nov)
 - [x] `research/io_euroc.py` loader (IMU csv + GT) + TUM writer (A)
 - [x] L0 naive strapdown baseline `research/baselines/naive.py` (A)
-- [ ] Training window sampler + dataset class (B)
-- [ ] `research/augment.py`: training degradation family, distinct from `degrade.py` (B, D-007)
-- [ ] Grouped 5-fold CV harness (B, D-007)
+- [x] Training window sampler (`research/nets/data.py`)
+- [x] `research/augment.py`: training degradation family, distinct from `degrade.py`
+- [x] Grouped 5-fold CV folds and `research/nets/train_vel.py`
 - [x] `research/degrade.py` degradation simulator (C)
 - [x] `research/eval/score.py` (evo ATE/RPE + proxy 100-pt) + `validate_format.py` (C)
 
@@ -20,7 +20,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [ ] L1 ESKF: first version in `research/baselines/eskf.py`, needs tuning on train (A)
 - [ ] Dropout handling + RTS smoother (A)
 - [ ] L2 IMU correction net v1 (B)
-- [ ] L3 body-frame velocity net v1 + covariance head (B)
+- [ ] L3 velocity net: code done (84k params), full 5-fold CV pending data (B)
 - [ ] Fuse L3 into ESKF (A)
 - [x] `scripts/run_heldout.sh`
 - [x] `scripts/measure_budget.sh`
@@ -50,6 +50,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — velocity net code
+- Done: `augment.py`, grouped folds, `VelNet` (84,246 params), trainer with early stopping and coverage reporting; runs on Apple MPS, and Colab/Kaggle should need no change. 15 tests pass.
+- Smoke only (train room1, test room2, 6 epochs): test RMSE 0.47 m/s per axis vs 0.59 for predicting zero, train 0.33 and widening, coverage 0.51 (target 60–75%). One training sequence, so this proves the pipeline runs, not accuracy. Not an experiment row.
+- Next: when all data lands, run folds 0–4, then fuse into the ESKF. Replace the assumed 5° tilt error in `data.py` with the ESKF's measured tilt error.
+- Gotchas: nets must never import the evaluation simulator (test enforces). Early-stop epoch from CV becomes `--epochs` for `--fold final`.
 ### 9 Nov — C++ port and budgets
 - Done: `src/main.cpp` matches `eskf.py` within 1e-5 m on a degraded flight; 12 tests pass. Budget on room1: 1.38 MB, 3.2 ms per 1 s of IMU. Dockerfile and `src/README.md` added.
 - Next: Docker build test (Docker Desktop must be running); data, then ESKF tuning.

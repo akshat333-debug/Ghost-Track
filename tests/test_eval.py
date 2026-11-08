@@ -111,3 +111,26 @@ def test_slower_ground_truth_is_accepted():
     t, _, _, gt = flight()
     slow = (gt[0][::2], gt[1][::2], gt[2][::2])  # 100 Hz ground truth, 200 Hz estimate
     assert score(t, gt[1], gt[2], slow, manifest(t))["ate"] < 1e-6
+
+
+def test_folds_never_touch_val_or_heldout():
+    from research.split import FOLDS, SPLITS
+    used = set(sum(FOLDS, []))
+    assert not used & set(SPLITS["val"]) and not used & set(SPLITS["heldout"])
+
+
+def test_augment_returns_clean_arrays_and_masks_drops():
+    from research.augment import corrupt
+    rng = np.random.default_rng(0)
+    g, a, mask = corrupt(np.zeros((64, 200, 3)), np.zeros((64, 200, 3)), rng)
+    assert np.isfinite(g).all() and np.isfinite(a).all()
+    assert 0 < mask.mean() < 1 and (g[mask == 0] == 0).all()
+
+
+def test_velnet_fits_capacity_and_shapes():
+    import torch
+    from research.nets.vel_net import VelNet, WINDOW, param_count
+    m = VelNet()
+    assert param_count(m) <= 100_000
+    mu, logvar = m(torch.zeros(2, 7, WINDOW))
+    assert mu.shape == (2, 3) and logvar.shape == (2, 3)

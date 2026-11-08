@@ -10,7 +10,7 @@ Output: 6-DoF pose per IMU frame (TUM format). Budget: ≤8 MB RAM, ≤20 ms per
 | L0 | naive strapdown, gravity from first ~1 s mean accel | A |
 | L1 | error-state Kalman filter (ESKF), state `p, v, q, b_g, b_a`; adaptive process noise for escalating jamming; zero-velocity/hover pseudo-measurements | A |
 | L2 | learned IMU correction (AirIMU-style): small 1D CNN/TCN → gyro/accel residual + uncertainty | B |
-| L3 | learned body-frame velocity (AirIO-style) from ~1 s windows + attitude encoding → ESKF velocity measurement with learned covariance | B |
+| L3 | learned velocity from ~1 s of gravity-aligned IMU with random-yaw training (D-009) → ESKF velocity measurement with learned covariance | B |
 | L4 | offline forward ESKF + backward RTS smoother (legal: processing is offline) | A |
 | L5 | blind-5 s forecaster: const-velocity / damped const-accel / small GRU on last 2–3 s of states; chosen on val | C/B |
 

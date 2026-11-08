@@ -33,6 +33,7 @@ training (research/nets, Colab)   ▼
 | self-checks | `python3 -m pytest tests -q` | done |
 | validate a file | `python3 research/eval/validate_format.py <est.txt> <imu.csv>` | done |
 | held-out report | `scripts/run_heldout.sh <method module>` | done |
+| train velocity net (one CV fold, 0–4) | `python3 -m research.nets.train_vel --fold 0 --out vel0.pt` | done |
 | budgets | `scripts/measure_budget.sh <imu.csv>` | done |
 | run C++ | `g++ -O2 -std=c++17 -o pathfinder src/main.cpp && ./pathfinder <imu.csv> <out.txt>` | done |
 | build submission | `scripts/make_zip.sh` | todo |

@@ -47,3 +47,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Fact check of D-002: measured Python RSS on room1 is 68 MB (scipy + numpy), far past the 8 MB budget. C++ measures 1.38 MB.
 - Rejected: Eigen (a vendored dependency for a handful of operations).
 
+### D-009 · 9 Nov · Velocity net works in a gravity-aligned frame with random yaw (TLIO-style)
+- Input: 1 s of gyro and gravity-removed accel rotated into the world frame by the estimator's attitude, plus a validity mask. Output: world velocity and log-variance. Training rotates input and target together by a random yaw.
+- Why: sensor mounting is unknown (`degrade.py` randomizes it, and the brief says gravity alignment is unknown), so body-frame features could break on data with a different mount. In this frame the mount cancels out, and heading drift does not change the prediction problem.
+- Trade-off accepted: AirIO reports gains from body-frame features, and random yaw also discards any "drones fly forward" prior. Revisit only if organizers confirm a fixed mount; compare by grouped CV under D-007.
+- Rejected: body-frame input with rotation augmentation (needs the net to learn invariance from about 25 min of data).
+

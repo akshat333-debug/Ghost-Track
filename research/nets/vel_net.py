@@ -1,10 +1,8 @@
 """L3: 1 s of gravity-aligned IMU to world-frame velocity with uncertainty (TLIO-style frame, D-009)."""
-import os
-
 import torch
 from torch import nn
 
-WINDOW = int(os.environ.get("PF_WINDOW", 200))  # samples; shortcut: env override for the length test, fix once chosen
+WINDOW = 200
 GYRO_SCALE, ACCEL_SCALE = 3.0, 5.0
 IN_CHANNELS = 10  # world gyro 3, world accel 3, validity 1, tilt cue 3
 
@@ -18,7 +16,7 @@ class VelNet(nn.Module):
         layers = []
         for a, b in zip(chans, chans[1:]):
             layers += [nn.Conv1d(a, b, 5, stride=2, padding=2), nn.ReLU()]
-        self.conv = nn.Sequential(*layers, nn.AdaptiveAvgPool1d(4))  # head size independent of window length
+        self.conv = nn.Sequential(*layers)
         self.head = nn.Sequential(nn.Flatten(), nn.Linear(64 * 4, 64), nn.ReLU(), nn.Linear(64, 6))
 
     def forward(self, x):

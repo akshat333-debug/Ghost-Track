@@ -51,6 +51,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — window test closed
+- Done: D-013, window stays 1 s; `PF_WINDOW` and the pooling layer removed. Early stopping skips warmup epochs.
+- Next: `scripts/train_cv.sh` running, result in `research/results/cv_report.txt`.
 ### 9 Nov — blind forecast
 - Done: D-012 in `eskf.py` and `src/main.cpp`, parity test passes. Val blind 5.67 to 4.71 m (never-moving 4.56).
 - In progress: window-length test on fold 0. `PF_WINDOW` env override stays until a length is chosen; default 200 is unchanged.

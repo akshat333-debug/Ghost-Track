@@ -6,7 +6,6 @@ State order in the error vector: dp, dv, dtheta, dbg, dba.
 
 Interface matches naive.run, so the manifest (failure time, dropouts) cannot leak into the estimator.
 """
-import os
 from collections import deque
 
 import numpy as np
@@ -16,7 +15,7 @@ G = 9.81
 UPDATE_EVERY = 20  # samples; pseudo-measurements run at about 10 Hz
 CENTROID_NODES = 200  # about 20 s of positions at that rate
 STATIC_WINDOW = 100  # samples
-VEL_WINDOW = int(os.environ.get("PF_WINDOW", 200))  # samples; must equal research.nets.vel_net.WINDOW
+VEL_WINDOW = 200  # samples; must equal research.nets.vel_net.WINDOW
 
 PARAMS = {
     "gyro_noise": 1.7e-4, "accel_noise": 2.0e-3,   # per sqrt(Hz)

@@ -74,7 +74,7 @@ def train(train_seqs, test_seqs, epochs, out=None, seed=0, warmup=None):
         history.append((ep, *fit, *res))
         print(f"ep {ep} train_rmse {fit[0]:.3f} test_rmse {res[0]:.3f} test_zero {res[1]:.3f} coverage {res[2]:.2f}",
               flush=True)
-        if test_seqs and res[0] < best[0]:
+        if test_seqs and ep >= warmup and res[0] < best[0]:  # warmup epochs have no trained uncertainty
             best = (res[0], ep)
             if out:
                 torch.save(model.state_dict(), out)

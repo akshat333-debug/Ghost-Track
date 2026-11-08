@@ -70,3 +70,8 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - GRU forecaster (D-005) still to be built and must beat this on val.
 - Why this is honest and not leakage: it uses only our own estimated positions before failure.
 
+### D-013 · 9 Nov · Velocity-net input stays at 1 s
+- Fold 0 final test RMSE: 1 s 0.437, 2.56 s 0.439, 3.84 s 0.435 m/s; train error fell to 0.212 at 3.84 s, so longer windows mostly widen the generalization gap. Criterion set before the test (clearly beat 0.437) is not met. 1 s also costs the least compute.
+- Fused ATE at 2.56 s was 3.58 m vs 3.73 m at 1 s, within run-to-run spread on 6 runs. The 3.84 s fused numbers are not comparable: its best checkpoint came from epoch 6, before uncertainty training.
+- Bug fixed: early stopping now ignores warmup epochs, whose uncertainty output is untrained and makes the filter nearly ignore the net.
+

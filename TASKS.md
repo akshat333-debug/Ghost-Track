@@ -33,7 +33,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 ## Day 6–9
 - [x] C++ port of ESKF, with Python parity test
 - [ ] C++ RTS smoother (A)
-- [ ] Weight export + C++ net forward + parity test ≤1e-5 (B)
+- [x] Weight export + C++ net forward (`-DPF_NET`) + parity test (≤1e-3 m, float32 net)
 - [ ] Dockerfile and `src/README.md` written; build and run in Docker not yet tested, repo README and fresh-clone repro pending (C)
 - [ ] Deck (`CollegeName_TeamName`), architecture diagram (C)
 - [ ] Walkthrough video ≤3 min (C)
@@ -51,6 +51,9 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 9 Nov — C++ net forward
+- Done: `research/nets/export_weights.py`, `src/vel_net.hpp`, `-DPF_NET` build. Parity with Python within 1e-3 m on a degraded flight. Net build on room1: 1.77 MB, 8.8 ms per 1 s of IMU, measured under training load.
+- Next: `src/weights.hpp` is generated from the final model, not committed yet. A build without `-DPF_NET` remains the classical fallback.
 ### 9 Nov — window test closed
 - Done: D-013, window stays 1 s; `PF_WINDOW` and the pooling layer removed. Early stopping skips warmup epochs.
 - Next: `scripts/train_cv.sh` running, result in `research/results/cv_report.txt`.

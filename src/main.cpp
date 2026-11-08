@@ -11,6 +11,10 @@
 #include <cstring>
 #include <vector>
 
+#ifdef PF_NET  // built with the learned velocity measurement (L3); without it, classical ESKF only
+#include "vel_net.hpp"
+#endif
+
 template <int R, int C> struct Mat {
     double a[R][C] = {};
     double* operator[](int i) { return a[i]; }
@@ -91,7 +95,8 @@ static M3 inv3(const M3& m) {
 const double G = 9.81;
 const int UPDATE_EVERY = 20, STATIC_WINDOW = 100;
 const double GYRO_NOISE = 1.7e-4, ACCEL_NOISE = 2.0e-3, GYRO_WALK = 1.9e-5, ACCEL_WALK = 3.0e-3;
-const double TILT_SIGMA = 4.0, VEL_SIGMA = 1.5, POS_SIGMA = 15.0, STATIC_VEL_SIGMA = 0.1;
+const double TILT_SIGMA = 4.0, POS_SIGMA = 15.0, STATIC_VEL_SIGMA = 0.1;
+[[maybe_unused]] const double VEL_SIGMA = 1.5;  // replaced by the net in PF_NET builds
 const double STATIC_RATIO = 3.0, BLIND_TAU = 1.0, BLIND_PULL_TAU = 1.0;
 const int CENTROID_NODES = 200;
 
@@ -132,14 +137,17 @@ struct Filter {
         }
     }
     void update(const V3& r, const Mat<3, 15>& H, double sigma) {
-        double s2 = sigma * sigma;
+        const double s[3] = {sigma, sigma, sigma};
+        update(r, H, s);
+    }
+    void update(const V3& r, const Mat<3, 15>& H, const double sigma[3]) {
+        M3 Rn;
+        for (int i = 0; i < 3; i++) Rn[i][i] = sigma[i] * sigma[i];
         Mat<15, 3> PHt = P * tr(H);
-        M3 S = H * PHt;
-        for (int i = 0; i < 3; i++) S[i][i] += s2;
-        Mat<15, 3> K = PHt * inv3(S);
+        Mat<15, 3> K = PHt * inv3(H * PHt + Rn);
         Mat<15, 1> dx = K * r;
         M15 I_KH = eye<15>() - K * H;
-        P = I_KH * P * tr(I_KH) + s2 * (K * tr(K));
+        P = I_KH * P * tr(I_KH) + K * Rn * tr(K);
         V3 dp, dv, dt, db, da;
         for (int i = 0; i < 3; i++) {
             dp[i][0] = dx[i][0]; dv[i][0] = dx[3 + i][0]; dt[i][0] = dx[6 + i][0];
@@ -158,6 +166,11 @@ struct Filter {
         Mat<3, 15> H;
         place(H, 0, 3, eye<3>());
         update((-1.0) * v, H, sigma);
+    }
+    void update_velocity(const V3& target, const double sigma[3]) {
+        Mat<3, 15> H;
+        place(H, 0, 3, eye<3>());
+        update(target - v, H, sigma);
     }
     void update_position(double sigma) {
         Mat<3, 15> H;
@@ -334,6 +347,13 @@ int main(int argc, char** argv) {
     double recent[CENTROID_NODES][3];
     int recent_n = 0, recent_at = 0;
     bool blind_started = false;
+#ifdef PF_NET
+    static double ring_imu[velnet::WINDOW][6];
+    static M3 ring_C[velnet::WINDOW];
+    static float net_x[velnet::IN_CHANNELS * velnet::WINDOW];
+    double f_sum[3] = {0, 0, 0};
+    ring_C[0] = s.C;
+#endif
     V3 blind_p0, blind_v0, blind_centre;
 
     std::rewind(in);
@@ -349,6 +369,9 @@ int main(int argc, char** argv) {
             double dt = T - T_prev;
             if (good) {
                 s.propagate(v3(v[0], v[1], v[2]), v3(v[3], v[4], v[5]), dt, scale);
+#ifdef PF_NET
+                for (int a = 0; a < 3; a++) f_sum[a] += v[3 + a];
+#endif
             } else {
                 s.coast(dt, i > last_good ? std::exp(-dt / BLIND_TAU) : 1.0);
                 if (i > last_good) {
@@ -380,10 +403,39 @@ int main(int argc, char** argv) {
                                        GYRO_NOISE * scale * std::sqrt(1 / median_dt / STATIC_WINDOW));
                 } else {
                     s.update_tilt(mean(win_a, W - UPDATE_EVERY, W), TILT_SIGMA);
+#ifndef PF_NET
                     s.update_velocity(VEL_SIGMA);
+#endif
                 }
                 s.update_position(POS_SIGMA);
             }
+#ifdef PF_NET
+            std::memcpy(ring_imu[i % velnet::WINDOW], v, sizeof ring_imu[0]);
+            if (good && i >= velnet::WINDOW && i % UPDATE_EVERY == 0) {
+                ring_C[i % velnet::WINDOW] = s.C;
+                double nf = std::sqrt(f_sum[0] * f_sum[0] + f_sum[1] * f_sum[1] + f_sum[2] * f_sum[2]);
+                V3 axis = v3(f_sum[0] / nf, f_sum[1] / nf, f_sum[2] / nf);
+                for (int k = 0; k < velnet::WINDOW; k++) {
+                    int idx = (i + 1 + k) % velnet::WINDOW;
+                    const double* r = ring_imu[idx];
+                    bool ok = row_good(r);
+                    V3 gw = ring_C[idx] * (ok ? v3(r[0], r[1], r[2]) : V3());
+                    V3 aw = ring_C[idx] * (ok ? v3(r[3], r[4], r[5]) : V3());
+                    if (ok) aw[2][0] -= G;
+                    V3 tw = ring_C[idx] * axis;
+                    for (int c = 0; c < 3; c++) {
+                        net_x[c * velnet::WINDOW + k] = (float)(gw[c][0] / 3.0);
+                        net_x[(3 + c) * velnet::WINDOW + k] = (float)(aw[c][0] / 5.0);
+                        net_x[(7 + c) * velnet::WINDOW + k] = (float)tw[c][0];
+                    }
+                    net_x[6 * velnet::WINDOW + k] = ok ? 1.0f : 0.0f;
+                }
+                double mu[3], sigma[3];
+                velnet::forward(net_x, mu, sigma);
+                s.update_velocity(v3(mu[0], mu[1], mu[2]), sigma);
+            }
+            ring_C[i % velnet::WINDOW] = s.C;
+#endif
         }
         write_pose(out, t, s);
         if (good) T_last_good = T;

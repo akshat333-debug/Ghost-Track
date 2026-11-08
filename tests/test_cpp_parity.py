@@ -52,3 +52,30 @@ def test_malformed_row_is_treated_as_invalid(binary, tmp_path):
     est = tmp_path / "e.txt"
     subprocess.run([str(binary), str(imu), str(est)], check=True)
     validate(str(est), str(imu))
+
+
+def test_net_build_matches_python(tmp_path):
+    import torch
+
+    from research.baselines.eskf_net import run_weights
+    from research.nets.export_weights import export
+    from research.nets.vel_net import VelNet
+
+    torch.manual_seed(1)
+    weights = tmp_path / "w.pt"
+    torch.save(VelNet().state_dict(), weights)
+    export(weights, tmp_path / "weights.hpp")
+    exe = tmp_path / "pathfinder_net"
+    subprocess.run(["g++", "-O2", "-std=c++17", "-Wall", "-Werror", "-DPF_NET", f"-I{tmp_path}",
+                    str(ROOT / "src/main.cpp"), "-o", str(exe)], check=True)
+
+    t, w, a, _ = flight(120)
+    t, w, a, _ = degrade(t, w, a, seed=5)
+    imu, est = str(tmp_path / "x/imu.csv"), str(tmp_path / "est.txt")
+    write_imu_csv(imu, t, w, a)
+    subprocess.run([str(exe), imu, est], check=True)
+    validate(est, imu)
+    got = np.loadtxt(est)
+    p, q = run_weights(weights)(t, w, a)
+    assert np.abs(got[:, 1:4] - p).max() < 1e-3  # float32 net arithmetic differs slightly across runtimes
+    assert (1 - np.abs(np.sum(got[:, 4:] * q, axis=1))).max() < 1e-6

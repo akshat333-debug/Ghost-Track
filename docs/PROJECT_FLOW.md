@@ -36,6 +36,7 @@ training (research/nets, Colab)   ▼
 | train velocity net (one CV fold, 0–4) | `python3 -m research.nets.train_vel --fold 0 --out vel0.pt` | done |
 | budgets | `scripts/measure_budget.sh <imu.csv>` | done |
 | run C++ | `g++ -O2 -std=c++17 -o pathfinder src/main.cpp && ./pathfinder <imu.csv> <out.txt>` | done |
+| export weights and build with net | `python3 -m research.nets.export_weights vel.pt src/weights.hpp && g++ -O2 -std=c++17 -DPF_NET -Isrc -o pathfinder src/main.cpp` | done |
 | build submission | `scripts/make_zip.sh` | todo |
 
 ## Submission bundle (slide 17, exact)

@@ -38,6 +38,12 @@ Budgets on a 184 s file (limits 8 MB and 20 ms per second of IMU): 6.5 MB of Pyt
 start (3.0 MB of that is the bare interpreter, 2.7 MB is the one-off cost of compiling the script), and
 2 to 4 ms per second of IMU for the whole process.
 
+![Held-out ATE](docs/figures/heldout_ate.png)
+
+![Error over time on MH_05](docs/figures/error_MH_05.png)
+
+More figures in `docs/figures/` (regenerate with `python3 -m research.demo.figures`). Deck: `docs/VITVellore_ZeroDrift.pptx`.
+
 ## What is honest to say about these numbers
 
 - An IMU alone cannot hold a position for minutes. Our gain over "never moving" is 7% on held-out data. What

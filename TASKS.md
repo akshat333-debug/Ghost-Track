@@ -64,6 +64,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 17 Nov — figures, deck, self-audit
+- Done: `docs/figures/` (+ dark set), `docs/VITVellore_ZeroDrift.pptx` on the organizers' template, `docs/VIDEO_SCRIPT.md`, `requirements.txt`, `docs/ARCHITECTURE.md` as shipped, zip committed (`submission/VITVellore_ZeroDrift.zip`, force-added). Organizer-path check: `evo_ape tum <gt> estimated_trajectory.txt --align` accepts the bundled file with its 49 duplicated timestamps. Fresh clone: 37 tests pass.
+- Open, needs a person: member details on deck slide 1, video recording and its link on slide 7, Docker run check (Docker Desktop was not running), merge to `main`, repo public, form.
+- Gotchas: rebuild the zip (`scripts/make_zip.sh`, then `git add -f`) after any change to `src/`. `metadata.json` inside the zip names the commit it was built from.
 ### 17 Nov — blind forecast, held-out run 1, bundle
 - Done: D-026 (blind relaxes to path centre). Held-out run 1 of 3: ATE 2.67 m vs 2.87 m never-moving, all 8 runs below it. `scripts/make_zip.sh` builds `submission/VITVellore_ZeroDrift.zip` (files at zip root, trajectory from MH_01_easy through the official script). `README.md` and `src/README.md` rewritten. `scripts/run_heldout.sh` now runs the official degradation.
 - Next: deck from `Submission_Final_forGithub.pptx`, 2-3 min video, brownie (sensor-health timeline + replay), Linux Docker budget numbers, commit the zip and make the repo public at submission.

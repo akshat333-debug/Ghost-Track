@@ -63,6 +63,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 16 Nov — drag filter in `src/main.py`
+- Done: D-024 (streaming core at or below never-moving), D-025 (8-state node filter + backward pass + drag measurement, shipped as a keep-rule exception). Val official: ATE 3.56 m against 3.90 m never-moving, RPE 0.66 against 1.00.
+- Next: blind-window selection by grouped CV on train (room5 blind is 4x worse than never-moving), then held-out run 1, `scripts/make_zip.sh`, README, deck, video.
+- Gotchas: `research/explore/tune.py` caches dev variants in `research/data/dev_cache`; delete it if `dev_variant` changes. Timing numbers were taken with load average about 50. Memory gate is now 7 MB because compiling the larger script costs 2.7 MB transiently.
+- How to run: `python3 -m research.explore.tune` (defaults), `python3 -m research.explore.tune "BLIND_TAU=0.5,1"` (sweep).
 ### 16 Nov — `src/main.py` v0
 - Done: pure-stdlib streaming `src/main.py` (layout/unit/rate detection, duplicate and stuck rows, 3-sample median against spikes, real-`dt` integration, coast through gaps and the dead tail, half-millimetre circle so evo can always align). `tests/test_main.py`: both column orders, 13 robustness cases, byte determinism, folder/zip input, memory and runtime gates. Dockerfile and `scripts/measure_budget.sh` now run Python. Measured on room1 (Mac, machine under download load): 5.15 MB traced from interpreter start, 2 to 4 ms per IMU-second.
 - Organizer follow-up email will not be sent (user, 16 Nov: no time). Every open question is covered by detection or by testing both readings.

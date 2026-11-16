@@ -14,7 +14,7 @@ from research.official_degrade import degrade_arrays, write_csv
 from test_eval import flight
 
 MAIN = str(Path(__file__).resolve().parent.parent / "src" / "main.py")
-MEMORY_MB, MS_PER_IMU_S = 6.0, 6.0  # D-020 gates; the organizers' limits are 8 MB and 20 ms
+MEMORY_MB, MS_PER_IMU_S = 7.0, 8.0  # D-020 gates; the organizers' limits are 8 MB and 20 ms
 
 
 def run_main(*args, cwd=None):

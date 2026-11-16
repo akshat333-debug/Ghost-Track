@@ -146,3 +146,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Ported result, same 22 runs: ATE / never-moving median 0.921 (drones 0.910, rooms 0.933), worst 0.99; 1 s relative position error 0.63 of never-moving (was 0.98). Selection bias: constants were chosen on these runs.
 - Blind window is not solved: about equal to never-moving on train; on val it is good on MH_05 and bad on room5. Blind selection by grouped CV is the next task. Current setting (pure decaying coast, 0.5 s) is provisional.
 - Budgets after the port (MH_01, machine load average about 50): 6.4 MB traced from interpreter start, of which 3.0 MB is the bare interpreter and 2.7 MB is the transient cost of compiling the script; 3.7 ms per IMU-second. Own gates moved from 6 to 7 MB and 6 to 8 ms (D-020 amended); organizer limits are 8 MB and 20 ms.
+
+### D-026 · 17 Nov · Blind 5 s: relax to the centre of the flown path; no forecast has skill beyond that
+- Swept on the 22 train dev-variant runs: velocity decay 0.01 / 0.5 / 1.5 s crossed with pull toward the estimated path centre at 1 s / 3 s / never. Blind error as a ratio to never-moving (rms over runs): pull 1 s gives 1.00 (drones 1.00, rooms 0.97–1.01) at every decay; pull 3 s 1.03–1.05; no pull 1.10–1.17, and up to 1.83 on rooms.
+- Chosen: decay 0.5 s, pull 1 s. It replaces the pure coast of D-025, which was 4x worse than never-moving on room5.
+- Stated plainly for the deck: with IMU-only input our velocity at the moment of failure is too noisy to extrapolate 5 s; the honest best guess is the centre of where the vehicle has been, approached smoothly so the path has no jump. D-012 reached the same conclusion on the old simulator.
+- Val, official config: ATE 3.51 m (never-moving 3.90), blind 2.39 m (never-moving 2.34), RPE 0.67 m.

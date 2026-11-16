@@ -88,9 +88,11 @@ def sweep(grid, split="train"):
             ratio = np.array([r["ate"] / r["null"] for r in rows])
             drone = np.array([not r["seq"].startswith("room") for r in rows])
             med = lambda k: np.nanmedian([r[k] for r in rows])
+            sq = lambda k, m: np.sqrt(np.nanmean(np.array([r[k] for r in rows])[m] ** 2))
+            agg = lambda m: sq('blind', m) / sq('null_blind', m)
             print(" ".join(f"{k}={v:g}" for k, v in ov.items()) or "defaults",
                   f"| ATE/null median {np.median(ratio):.3f} drone {np.median(ratio[drone]):.3f} rooms {np.median(ratio[~drone]):.3f}"
-                  f" worst {ratio.max():.2f} | blind/null {med('blind') / med('null_blind'):.2f}"
+                  f" worst {ratio.max():.2f} | blind/null rms drone {agg(drone):.2f} rooms {agg(~drone):.2f} all {agg(drone | True):.2f}"
                   f" | rpe/null {med('rpe') / med('rpe_null'):.2f} | rot deg/s {med('rpe_rot'):.2f}", flush=True)
 
 

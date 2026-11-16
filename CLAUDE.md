@@ -15,7 +15,7 @@ Full rules/specs: `docs/hackathondetails.md`. Plan: `docs/PROJECT_FLOW.md`, `doc
 - **Anti-overfitting (D-007, read it before any tuning or training):** nets train on `augment.py`, never `degrade.py`; choose models by grouped CV; keep rule is fixed in advance; held-out has a 3-run budget.
 - Never use ground truth of the evaluation input inside the estimator. If the organizers' test reuses public sequences, we still never exploit known GT.
 - Every number that goes in the deck/README must have an `EXPERIMENTS.md` row with a commit hash.
-- Submission is **Python only**: `src/main.py`, standard library only, no numpy (D-015). Budgets: ≤8 MB heap, ≤20 ms per 1 s of IMU, single thread, offline, no network. Our gates are 6 MB and 6 ms (D-020).
+- Submission is **Python only**: `src/main.py`, standard library only, no numpy (D-015). Budgets: ≤8 MB heap, ≤20 ms per 1 s of IMU, single thread, offline, no network. Our gates are 7 MB and 8 ms (D-020, D-025).
 - Tune only on `dev_variant` degradations of train sequences; the official seed-42 config is report-only (D-017). Never assume column order (D-016). No sequence fingerprinting or ground-truth lookup (D-021).
 - Output format is exact: `estimated_trajectory.txt`, 8 space-separated cols `timestamp tx ty tz qx qy qz qw`, seconds (ns × 1e-9), unit quaternion, one pose per input row (duplicated rows included, never append rows). Run the validator before claiming done.
 

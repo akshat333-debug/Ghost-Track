@@ -26,7 +26,7 @@ VEL_TAU = 0.3         # s, bounded dead reckoning: velocity leak (swept on dev v
 POS_TAU = 1.0        # s, position leak toward the flown area
 ACC_TAU = 10.0        # s, slow world-acceleration offset removal (bias, gravity magnitude error)
 BIAS_MAX = 0.2        # rad/s, largest start-of-file median gyro rate accepted as sensor bias
-BLIND_PULL = 0        # 1: keep pulling toward the origin after the IMU has failed; 0: pure decaying coast
+BLIND_PULL_TAU = 1.0  # s, how fast the blind forecast relaxes toward the centre of the flown path
 BLIND_TAU = 0.5       # s, velocity decay while no sensor data arrives
 NODE_S = 0.2          # s, step of the horizontal filter below (widened on very long files)
 MAX_NODES = 2000      # bounds memory: node records are the only storage that grows with the file
@@ -545,7 +545,7 @@ def smooth_nodes(cols, cfg):
                 got = True
         trust += TRUST_RATE * ((1.0 if got else 0.0) - trust)  # recent share of accepted drag measurements
         wgt = min(1.0, max(0.0, (trust - 0.5) * 4.0))           # priors loosen only in sustained rotor flight
-        if i <= last or BLIND_PULL:
+        if i <= last:
             prior2(x, P, 2, SIG_V0 * (1.0 - wgt) + SIG_V0_FLY * wgt)
             prior2(x, P, 0, SIG_P * (1.0 - wgt) + SIG_P_FLY * wgt)
         for a in range(8):  # keep the covariance symmetric and positive on the diagonal against round-off
@@ -581,7 +581,18 @@ def smooth_nodes(cols, cfg):
         for m in range(8):
             row = base + m * 8
             XS[i * 8 + m] += sum(PS[row + q] * g[q] for q in range(8))
-    return XS[0::8], XS[1::8]
+    X, Y = XS[0::8], XS[1::8]
+    # Blind forecast after the last usable sample: coast on the smoothed velocity, which dies out, while the
+    # whole offset from the flown area's centre also relaxes. With no data, the centre is the best guess.
+    cx, cy = sum(X[:last + 1]) / (last + 1), sum(Y[:last + 1]) / (last + 1)
+    vx, vy = XS[last * 8 + 2], XS[last * 8 + 3]
+    for i in range(last + 1, n):
+        el = (i - last) * dt
+        reach = BLIND_TAU * (1.0 - math.exp(-el / BLIND_TAU))
+        keep = math.exp(-el / BLIND_PULL_TAU)
+        X[i] = cx + (X[last] + vx * reach - cx) * keep
+        Y[i] = cy + (Y[last] + vy * reach - cy) * keep
+    return X, Y
 
 
 def fallback(source, out_path, digits):

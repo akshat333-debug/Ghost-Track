@@ -1,12 +1,38 @@
-# Path Finder submission (Team Zero Drift)
+# Path Finder submission (Team Zero Drift, VITVellore_ZeroDrift)
 
-IMU-only 6-DoF trajectory estimation. Python 3 standard library only: no packages to install, single thread, no network.
+IMU-only 6-DoF trajectory estimation under sensor degradation. Python 3 standard library only: nothing to
+install, single thread, no network, no files other than the input and the output.
 
-Run:
+## Run
 
-    python3 main.py <imu0/data.csv> estimated_trajectory.txt
+    python3 main.py <input> [output]
 
-(`main.py` lands on 17 Nov; see `TASKS.md`.)
+- `input`: the IMU CSV (`imu0/data.csv`), a folder that contains it, or a zip of that folder. With no
+  argument the current folder is searched.
+- `output`: a file or folder. Default `./estimated_trajectory.txt`.
 
-Output is TUM format: `timestamp tx ty tz qx qy qz qw`, one pose per input IMU row.
-Rows with missing or non-numeric values are treated as dropped frames and still get a pose.
+Output is TUM format, space separated: `timestamp tx ty tz qx qy qz qw`, timestamp in seconds, unit quaternion.
+Exactly one pose per input data row, in input order. Rows are never added; duplicated input rows get one pose each.
+
+## What it does not assume
+
+Measured from the first rows of the file instead: column order (gyro-first as in EuRoC, or accel-first as in
+the organizers' script), accel unit (m/s² or g), timestamp unit (ns, µs, ms, s), sample rate, gravity magnitude,
+start attitude. A header line is optional.
+
+## How it works
+
+1. Row cleaning: all-zero or NaN rows are a dead sensor, exact repeats are a stuck sensor, a 3-sample median
+   removes one-row spikes, missing rows are covered by integrating over the real time step.
+2. Pass 1: gyro integration with a weak pull toward the measured specific-force direction; sums per 0.2 s node.
+3. Node filter with backward smoothing (horizontal position, velocity, acceleration error, lateral accel bias).
+   It uses rotor drag as a velocity measurement: on a multirotor the accelerometer reading normal to the thrust
+   axis is proportional to velocity. The measurement is gated statistically, so on data that is not rotor
+   flight the filter falls back to bounded dead reckoning.
+4. After the sensor dies: the path relaxes smoothly to the centre of the flown area; attitude is held.
+5. Pass 2: the same attitude sweep again, writing every row. Memory does not grow with file length.
+
+## Budgets (limits: 8 MB, 20 ms per second of IMU)
+
+See `../metadata.json` for the numbers measured when this bundle was built. Memory there is the strictest
+reading: Python heap traced from interpreter start, imports and script compilation included.

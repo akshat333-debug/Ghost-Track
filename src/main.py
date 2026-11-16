@@ -20,10 +20,11 @@ G0 = 9.80665
 PROBE_ROWS = 1000     # rows used to measure layout, units, rate and start attitude
 GAP_S = 0.1           # longer than this without a usable sample: coast instead of integrating a stale reading
 TILT_GAIN = 0.2       # 1/s, pull of attitude toward the measured specific-force direction
-BIAS_GAIN = 0.01      # 1/s^2, gyro-bias learning from the same error
-VEL_TAU = 2.0         # s, v0 bounded dead reckoning: velocity leak
-POS_TAU = 10.0        # s, position leak toward the flown area
+BIAS_GAIN = 0.001     # 1/s^2, gyro-bias learning from the same error
+VEL_TAU = 0.3         # s, bounded dead reckoning: velocity leak (swept on dev variants, D-024)
+POS_TAU = 1.0        # s, position leak toward the flown area
 ACC_TAU = 10.0        # s, slow world-acceleration offset removal (bias, gravity magnitude error)
+BIAS_MAX = 0.2        # rad/s, largest start-of-file median gyro rate accepted as sensor bias
 BLIND_TAU = 1.0       # s, velocity decay while no sensor data arrives
 HELIX_M = 5e-4        # m, see run(): keeps a motionless estimate alignable
 HELIX_RAD_S = 0.1
@@ -154,6 +155,10 @@ def probe(source):
     # start attitude from the mean specific force over the first half second of usable rows
     n0 = max(1, min(len(rows), int(0.5 / cfg["dt"]) if cfg["dt"] > 0 else 100))
     cfg["up"] = [sum(v[acc + i] for v in rows[:n0]) / n0 for i in range(3)]
+    # Gyro bias seed: per-axis median rate over the probe rows. Rates of a start that is still, or shaken about
+    # a rest pose, have zero median; a start in steady rotation does not, so large values are not trusted.
+    bias = [median([v[3 - acc + i] for v in rows]) for i in range(3)]
+    cfg["bias"] = bias if max(abs(b) for b in bias) < BIAS_MAX else [0.0, 0.0, 0.0]
     return cfg
 
 
@@ -196,7 +201,7 @@ def run(source, out_path):
     ia, ig, unit, grav = cfg["acc"], cfg["gyr"], cfg["unit"], cfg["g"]
     qw, qx, qy, qz = quat_from_up(cfg["up"])
     px = py = pz = vx = vy = vz = 0.0
-    bx = by = bz = 0.0            # gyro bias
+    bx, by, bz = cfg["bias"]    # gyro bias
     ox = oy = oz = 0.0            # slow world-acceleration offset
     wx = wy = wz = 0.0            # last accepted gyro sample
     fx = fy = fz = 0.0            # last accepted specific force

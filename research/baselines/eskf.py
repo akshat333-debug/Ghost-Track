@@ -121,6 +121,21 @@ class Filter:
         H[:, :3] = np.eye(3)
         self.update(-self.p, H, sigma)
 
+    def update_drag(self, f_mean, axis, k, sigma, gate):
+        """Rotor drag (D-019): specific force normal to the thrust axis reads -k * body velocity."""
+        P = np.eye(3) - np.outer(axis, axis)
+        vb = self.C.T @ self.v
+        H = np.zeros((3, 15))
+        H[:, 3:6] = -k * P @ self.C.T
+        H[:, 6:9] = -k * P @ skew(vb)
+        H[:, 12:15] = P
+        r = P @ (f_mean - self.ba) + k * P @ vb
+        S = H @ self.P @ H.T + np.eye(3) * sigma**2
+        if r @ np.linalg.solve(S, r) > gate:
+            return False  # not behaving like rotor flight right now (handling, ground contact, handheld data)
+        self.update(r, H, sigma)
+        return True
+
     def update_gyro_bias(self, w_mean, sigma):
         H = np.zeros((3, 15))
         H[:, 9:12] = np.eye(3)
@@ -252,6 +267,9 @@ def run(t_ns, gyro, accel, params=PARAMS, vel_fn=None, smooth=False):
                                      params["gyro_noise"] * scale[i] * np.sqrt(1 / median_dt / STATIC_WINDOW))
             else:
                 flt.update_tilt(f_mean, params["tilt_sigma"])
+                if params.get("drag_k"):
+                    flt.update_drag(f_mean, f_sum / np.linalg.norm(f_sum), params["drag_k"],
+                                    params["drag_sigma"] * scale[i] ** 0.5, params["drag_gate"])
                 if vel_fn is None:
                     flt.update_velocity(params["vel_sigma"])
             flt.update_position(params["pos_sigma"])

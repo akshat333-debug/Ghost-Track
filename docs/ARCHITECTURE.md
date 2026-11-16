@@ -1,12 +1,14 @@
 # Architecture
 
-## Design since 16 Nov (D-015, D-016, D-019). Sections below are the 9 Nov design, kept for history.
+## Design as shipped (D-015, D-016, D-024, D-025, D-026). Sections below are the 9 Nov design, kept for history.
 `src/main.py`, standard library only, two streaming passes so memory does not grow with file length.
-1. Front end per row: detect column layout by gravity magnitude; classify rows as valid, duplicate, stuck, spike or invalid (NaN or all zero; a trailing invalid run is the blind window); integrate with the real `dt`, so missing rows need no special case; track noise level from first differences.
-2. Pass 1: quaternion attitude and preintegration per row; at nodes about 0.2 s apart an error-state filter (`δp, δv, δθ, b_g, b_a`) with tilt, static, bounded-motion and, if gate G1 passes, rotor-drag velocity measurements.
-3. Backward RTS pass over nodes.
-4. Pass 2: repeat the front end, apply interpolated node corrections, forecast the blind 5 s, write one pose per input row.
-Learned nets (L2, L3, GRU) are retired (D-018).
+1. Probe (first 1000 rows): column layout by gravity magnitude, accel and timestamp units, sample period, gravity magnitude, start attitude from mean specific force, gyro-bias seed from the median rate (trusted below 0.2 rad/s), node step from the file size (0.2 s, at most 2000 nodes).
+2. Row cleaning, identical in both passes: NaN or all-zero rows are a dead sensor; an exact repeat of all six channels is a stuck sensor; a duplicated timestamp reuses the previous pose; a 3-sample median per channel removes one-row spikes; integration uses the real time step, so missing rows need no special case; gaps over 0.1 s are coasted.
+3. Pass 1: quaternion gyro integration with a weak Mahony-style pull toward the specific-force direction; per node, sums of body specific force, quaternion and world velocity increment.
+4. Node filter, 8 states (horizontal position, velocity, world-acceleration error, accel bias in the plane normal to thrust). Input: world velocity increments. Measurement: rotor drag, lateral specific force = -0.177 /s x body velocity, accepted only inside a chi-square gate. Zero-velocity and stay-near-origin priors, loosened only while most recent drag measurements are accepted. States-only RTS backward pass.
+5. Blind window: horizontal path relaxes to the centre of the flown path (velocity decay 0.5 s, pull 1 s); attitude held.
+6. Pass 2: the same attitude sweep, vertical position by leaky double integration, horizontal position interpolated from the nodes, one row written per input row. A 0.5 mm circle is added so evo's alignment never sees a degenerate path.
+Not built, on purpose: 15-state filter (D-024), learned nets (D-018), C++ (D-015).
 
 ## Problem
 Input: degraded IMU (200 Hz gyro + accel incl. gravity, EuRoC CSV, ns timestamps). Degradation escalates over time: noise ↑, bias drift ↑, ~2 s dropouts, unknown gravity alignment, then total IMU failure → predict 5 s blind.

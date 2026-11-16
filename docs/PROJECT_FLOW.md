@@ -29,10 +29,15 @@ The estimator is `src/main.py` (pure standard library). Degradation for scoring 
 
 | step | command | status |
 |---|---|---|
-| score on tuning variants | `python3 -m research.eval.run_official --method src/main.py --split train --variant dev --n 4` | runner done, `main.py` todo |
+| score on tuning variants | `python3 -m research.eval.run_official --method src/main.py --split train --variant dev --n 4` | done |
+| sweep constants on cached tuning runs | `python3 -m research.explore.tune "BLIND_TAU=0.5,1"` | done |
+| held-out report (3-run budget) | `scripts/run_heldout.sh` | run 1 done |
+| budgets | `scripts/measure_budget.sh <imu.csv>` | done |
+| figures, deck | `python3 -m research.demo.figures [--dark]`, `python3 -m research.demo.build_deck` | done |
+| submission zip | `scripts/make_zip.sh` | done |
 | report on official config | `python3 -m research.eval.run_official --method src/main.py --split val --variant official` | runner done |
 | gate G1 | `python3 -m research.eval.drag_gate` | done |
-| run the submission | `python3 src/main.py <imu0/data.csv> estimated_trajectory.txt` | todo |
+| run the submission | `python3 src/main.py <imu0/data.csv> estimated_trajectory.txt` | done |
 
 ## How to run (before 16 Nov; C++ rows are historical, code in `legacy/cpp/`)
 | step | command | status |

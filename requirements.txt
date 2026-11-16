@@ -1,0 +1,9 @@
+# The submission (src/main.py) needs nothing: Python 3 standard library only.
+# These are for the evaluation harness, figures and deck in research/, tests/ and scripts/.
+numpy
+scipy
+pandas
+evo
+pytest
+matplotlib
+python-pptx

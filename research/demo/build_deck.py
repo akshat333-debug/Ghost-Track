@@ -118,7 +118,8 @@ def build():
     text(s[3], 5.1, 3.2, 4.5, 2.1, [
         ("One file, no dependencies", {"size": 14, "bold": True, "color": BLUE}),
         "src/main.py imports only the Python standard library. Importing numpy alone costs 9.9 MB of traced heap, above the whole budget.",
-        "Filter state: position, velocity, acceleration error and accelerometer bias in the horizontal plane (8 numbers)."], size=12)
+        "Filter state: position, velocity, acceleration error and accelerometer bias in the horizontal plane (8 numbers).",
+        ("Tools and tech stack: Python 3 standard library (submission); numpy, scipy, pandas, evo, pytest, matplotlib (evaluation only); Docker; Git.", {"color": MUTED, "size": 11})], size=12)
 
     # 5 track final output
     set_text([sh for sh in s[4].shapes if sh.name == "Text 2"][0], "TRACK FINAL OUTPUT")

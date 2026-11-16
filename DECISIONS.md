@@ -152,3 +152,9 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Chosen: decay 0.5 s, pull 1 s. It replaces the pure coast of D-025, which was 4x worse than never-moving on room5.
 - Stated plainly for the deck: with IMU-only input our velocity at the moment of failure is too noisy to extrapolate 5 s; the honest best guess is the centre of where the vehicle has been, approached smoothly so the path has no jump. D-012 reached the same conclusion on the old simulator.
 - Val, official config: ATE 3.51 m (never-moving 3.90), blind 2.39 m (never-moving 2.34), RPE 0.67 m.
+
+### D-027 · 17 Nov · Tested and rejected: a drag gate that ignores the zero-velocity prior
+- Suspicion: in Machine Hall the drag measurement is accepted on only 3–18% of nodes, perhaps because the tight zero-velocity prior makes fast real flight look inconsistent, so the gate should not inherit it.
+- Test on the 22 train dev-variant runs: add a variance (0.25, 1, 4 (m/s)²) to the innovation covariance for the gate only, at gate 9 and 30. Best drone result 0.893 of never-moving against 0.908 now, a 1.5-point gain, while rooms go from 0.93 to 1.14–2.11 and the worst run to 1.5–2.5 as handheld data starts passing the gate. The one setting that hurts nothing (0.25 at gate 9) scores 0.913 overall against 0.918: inside the noise.
+- Conclusion: acceptance is not what limits drone accuracy; the drag velocity itself is too noisy to integrate over a long path. Not adopted, code reverted. Constants stay as in D-025.
+- Stopping rule: no further constant tuning on these 22 runs. The remaining ideas are within their noise, and more passes over the same runs only fit them.

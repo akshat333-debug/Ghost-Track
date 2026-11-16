@@ -19,7 +19,6 @@ import sys
 G0 = 9.80665
 PROBE_ROWS = 1000     # rows used to measure layout, units, rate and start attitude
 GAP_S = 0.1           # longer than this without a usable sample: coast instead of integrating a stale reading
-SPIKE_RATIO = 5.0     # first-difference jump, relative to its running mean, that marks a one-row spike
 TILT_GAIN = 0.2       # 1/s, pull of attitude toward the measured specific-force direction
 BIAS_GAIN = 0.01      # 1/s^2, gyro-bias learning from the same error
 VEL_TAU = 2.0         # s, v0 bounded dead reckoning: velocity leak
@@ -181,6 +180,14 @@ def stamp(t, digits):
     return "%.9f" % (t * 10.0 ** -digits)
 
 
+def med3(a, b, c):
+    if a > b:
+        a, b = b, a
+    if b > c:
+        b = c
+    return a if a > b else b
+
+
 def run(source, out_path):
     cfg = probe(source)
     digits, scale = cfg["digits"], cfg["scale"]
@@ -192,56 +199,59 @@ def run(source, out_path):
     bx = by = bz = 0.0            # gyro bias
     ox = oy = oz = 0.0            # slow world-acceleration offset
     wx = wy = wz = 0.0            # last accepted gyro sample
-    fx, fy, fz = [c * unit for c in cfg["up"]]
-    da = dg = -1.0                # running mean first-difference norms (noise + motion level)
-    streak = 0
+    fx = fy = fz = 0.0            # last accepted specific force
     have = False                  # an accepted sample exists
-    t_prev = None
-    t0 = None
-    t_good = None                 # time of the last accepted sample
-    prev_raw = None
-    pose = "0.000000 0.000000 0.000000 %.9f %.9f %.9f %.9f\n" % (qx, qy, qz, qw)
+    t0 = t_last = t_good = None   # first row, last written row, last accepted sample
+    pend = None                   # row read but not yet integrated: the median below needs its successor
+    repeats = []                  # timestamps of rows duplicating the pending one
+    last_raw = raw_prev = None    # newest usable raw row; the usable raw row before the pending one
     sqrt, sin, cos, exp = math.sqrt, math.sin, math.cos, math.exp
     lo, hi = 0.85 * grav, 1.15 * grav
 
     with open_lines(source) as f, open(out_path, "w") as out:
         write = out.write
-        for line in f:
-            r = split_row(line)
-            if r is None:
-                continue
-            t, v = r
-            if t_prev is None:
-                t_prev = t0 = t
-            dt = (t - t_prev) * scale
-            if dt <= 0.0:          # duplicated or out-of-order row: same pose again, nothing to integrate
-                if t > t_prev:
-                    t_prev = t
-                write(stamp(t, digits) + " " + pose)
-                continue
-            t_prev = t
+        lines = iter(f)
+        while True:
+            line = next(lines, None)
+            if line is None:
+                if pend is None:
+                    break
+                t_new = v_new = None
+                ok_new = False
+            else:
+                r = split_row(line)
+                if r is None:
+                    continue
+                t_new, v_new = r
+                if pend is not None and t_new <= pend[0]:
+                    repeats.append(t_new)  # duplicated or out-of-order row: it gets the pending row's pose
+                    continue
+                # stuck sensor: an exact repeat of all six channels carries no new information
+                ok_new = usable(v_new) and v_new != last_raw
+                if ok_new:
+                    last_raw = v_new
+                if pend is None:
+                    pend = (t_new, v_new, ok_new)
+                    t0 = t_last = t_new
+                    continue
 
-            ok = usable(v)
-            if ok and v == prev_raw:
-                ok = False         # stuck sensor: an exact repeat of all six channels carries no new information
+            t, v, ok = pend
             if ok:
-                prev_raw = v
-                gx, gy, gz = v[ig], v[ig + 1], v[ig + 2]
-                ax, ay, az = v[ia] * unit, v[ia + 1] * unit, v[ia + 2] * unit
-                if have:
-                    ea = sqrt((ax - fx) ** 2 + (ay - fy) ** 2 + (az - fz) ** 2)
-                    eg = sqrt((gx - wx) ** 2 + (gy - wy) ** 2 + (gz - wz) ** 2)
-                    if da < 0.0:
-                        da, dg = ea, eg
-                    elif (ea > SPIKE_RATIO * da or eg > SPIKE_RATIO * dg) and streak < 3:
-                        ok = False  # one-row spike; three in a row is a real change, so accept and re-learn
-                        streak += 1
-                    else:
-                        streak = 0
-                        da += 0.01 * (ea - da)
-                        dg += 0.01 * (eg - dg)
-
-            if ok and have and (t - t_good) * scale <= GAP_S:
+                if raw_prev is not None and ok_new:
+                    # 3-sample median per channel: removes one-row spikes at any noise level, with no threshold
+                    n = v_new
+                    c = [med3(raw_prev[0], v[0], n[0]), med3(raw_prev[1], v[1], n[1]), med3(raw_prev[2], v[2], n[2]),
+                         med3(raw_prev[3], v[3], n[3]), med3(raw_prev[4], v[4], n[4]), med3(raw_prev[5], v[5], n[5])]
+                else:
+                    c = v
+                raw_prev = v
+                gx, gy, gz = c[ig], c[ig + 1], c[ig + 2]
+                ax, ay, az = c[ia] * unit, c[ia + 1] * unit, c[ia + 2] * unit
+            else:
+                gx, gy, gz, ax, ay, az = wx, wy, wz, fx, fy, fz  # hold the last accepted sample
+            dt = (t - t_last) * scale
+            t_last = t
+            if dt > 0.0 and have and (t - t_good) * scale <= GAP_S:
                 # trapezoid over the true time step, so missing rows need no special case
                 mx, my, mz = 0.5 * (gx + wx) - bx, 0.5 * (gy + wy) - by, 0.5 * (gz + wz) - bz
                 sx, sy, sz = 0.5 * (ax + fx), 0.5 * (ay + fy), 0.5 * (az + fz)
@@ -278,18 +288,18 @@ def run(source, out_path):
                 h2 = hx * hx + hy * hy + hz * hz
                 if h2 > 1e-4:
                     h = sqrt(h2)
-                    c, s = cos(h), sin(h) / h
-                    hx, hy, hz = hx * s, hy * s, hz * s
+                    c2, s2 = cos(h), sin(h) / h
+                    hx, hy, hz = hx * s2, hy * s2, hz * s2
                 else:
-                    c = 1.0 - 0.5 * h2
-                nw = qw * c - qx * hx - qy * hy - qz * hz
-                nx = qx * c + qw * hx + qy * hz - qz * hy
-                ny = qy * c + qw * hy + qz * hx - qx * hz
-                nz = qz * c + qw * hz + qx * hy - qy * hx
-                n = 1.0 / sqrt(nw * nw + nx * nx + ny * ny + nz * nz)
-                qw, qx, qy, qz = nw * n, nx * n, ny * n, nz * n
-            else:
-                # no usable sample for this step (dropout, dead IMU, spike, stuck): attitude holds, motion coasts out
+                    c2 = 1.0 - 0.5 * h2
+                nw = qw * c2 - qx * hx - qy * hy - qz * hz
+                nx = qx * c2 + qw * hx + qy * hz - qz * hy
+                ny = qy * c2 + qw * hy + qz * hx - qx * hz
+                nz = qz * c2 + qw * hz + qx * hy - qy * hx
+                k = 1.0 / sqrt(nw * nw + nx * nx + ny * ny + nz * nz)
+                qw, qx, qy, qz = nw * k, nx * k, ny * k, nz * k
+            elif dt > 0.0:
+                # nothing usable close enough (dropout, dead IMU): attitude holds, motion coasts out
                 d = exp(-dt / BLIND_TAU)
                 px += vx * BLIND_TAU * (1.0 - d)
                 py += vy * BLIND_TAU * (1.0 - d)
@@ -303,9 +313,14 @@ def run(source, out_path):
             # The evaluator's SE(3) alignment fails on a constant or straight path (a sensor that never moves).
             # A half-millimetre circle keeps every output alignable and costs nothing measurable.
             ang = HELIX_RAD_S * (t - t0) * scale
-            pose = "%.6f %.6f %.6f %.9f %.9f %.9f %.9f\n" % (px + HELIX_M * cos(ang), py + HELIX_M * sin(ang), pz,
-                                                            qx, qy, qz, qw)
-            write(stamp(t, digits) + " " + pose)
+            pose = " %.6f %.6f %.6f %.9f %.9f %.9f %.9f\n" % (px + HELIX_M * cos(ang), py + HELIX_M * sin(ang), pz,
+                                                             qx, qy, qz, qw)
+            write(stamp(t, digits) + pose)
+            for tr in repeats:
+                write(stamp(tr, digits) + pose)
+            if repeats:
+                repeats = []
+            pend = (t_new, v_new, ok_new) if line is not None else None
     return cfg
 
 

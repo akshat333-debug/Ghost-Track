@@ -3,10 +3,11 @@
 Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C++, B nets, C data/eval/docs.
 
 ## Next up (16 Nov replan; schedule in `docs/PLAN.md` header)
-- [ ] Send follow-up questions in `docs/ORGANIZER_QUESTIONS.md` (user)
+- [x] Follow-up questions: not sent, user decision 16 Nov; handled by detection and two-way tests
 - [ ] One-shot baseline: frozen ESKF on official-degraded val, logged before any tuning (D-007 rule 2)
 - [ ] Gate G1: `python3 -m research.eval.drag_gate` (D-019)
-- [ ] 17 Nov: `src/main.py` v0 (parser, front end, attitude, two passes, CLI), budget + robustness tests, Dockerfile, `scripts/measure_budget.sh` for Python, backup zip 1
+- [x] `src/main.py` v0 (parser, front end, attitude, CLI), budget + robustness tests, Dockerfile, `scripts/measure_budget.sh` for Python
+- [ ] Backup zip 1 once v0 at least ties never-moving
 - [ ] 18 Nov: node filter + RTS in pure Python; drag measurement if G1 passed; keep-rule verdict on dev variants
 - [ ] 19 Nov: blind forecaster CV, val confirmation, sweeps, Docker budgets, held-out run 1
 - [ ] 20 Nov: freeze; README, `scripts/make_zip.sh`, fresh-clone repro, deck, brownie (sensor-health timeline + replay)
@@ -62,6 +63,12 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 16 Nov — `src/main.py` v0
+- Done: pure-stdlib streaming `src/main.py` (layout/unit/rate detection, duplicate and stuck rows, 3-sample median against spikes, real-`dt` integration, coast through gaps and the dead tail, half-millimetre circle so evo can always align). `tests/test_main.py`: both column orders, 13 robustness cases, byte determinism, folder/zip input, memory and runtime gates. Dockerfile and `scripts/measure_budget.sh` now run Python. Measured on room1 (Mac, machine under download load): 5.15 MB traced from interpreter start, 2 to 4 ms per IMU-second.
+- Organizer follow-up email will not be sent (user, 16 Nov: no time). Every open question is covered by detection or by testing both readings.
+- Not good yet: v0 position is a leaky integrator, ATE about 4 m on room1 against 1.0 m for never-moving, and tilt error reaches 10 to 15 degrees in bursts. EuRoC gyro bias is about 0.08 rad/s (plain integration drifts 4.6 deg/s on MH_05), so the bias state matters. The node filter + RTS of 18 Nov replaces the position and attitude core; do not tune v0 constants.
+- Next: when downloads finish, one-shot baseline row, gate G1, then the node filter.
+- Gotchas: timing tests are noisy while downloads run (load average was 48); the runtime test takes best of three.
 ### 16 Nov — FAQ pivot
 - Done: FAQ and official script read and vendored; D-015 to D-021; C++ moved to `legacy/cpp/`; `research/official_degrade.py`, `research/eval/run_official.py`, `research/eval/drag_gate.py`; scorer reports full-alignment tiers and tolerates duplicated rows; 17 tests pass.
 - Next: baseline row, G1, then `src/main.py`.

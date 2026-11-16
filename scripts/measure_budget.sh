@@ -1,22 +1,32 @@
 #!/usr/bin/env bash
-# Peak RSS and compute per second of IMU against the Track 3 budgets (8 MB, 20 ms/s).
+# Traced heap peak and compute per second of IMU against the Track 3 budgets (8 MB, 20 ms/s).
+# Memory is traced from interpreter start, imports included: the strictest reading of the FAQ (D-015, D-020).
 # Usage: scripts/measure_budget.sh <imu.csv>
 set -euo pipefail
 imu=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 cd "$(dirname "$0")/.."
 mkdir -p build
-g++ -O2 -std=c++17 -o build/pathfinder src/main.cpp
 out=build/budget_output.txt
-if [ "$(uname)" = Darwin ]; then
-  stats=$(/usr/bin/time -l build/pathfinder "$imu" "$out" 2>&1)
-  rss_mb=$(awk '/maximum resident set size/{printf "%.2f", $1/1048576}' <<<"$stats")
-  secs=$(awk '/ real /{print $1}' <<<"$stats")
-else
-  stats=$(/usr/bin/time -f '%M %e' build/pathfinder "$imu" "$out" 2>&1)
-  rss_mb=$(awk '{printf "%.2f", $1/1024}' <<<"$stats")
-  secs=$(awk '{print $2}' <<<"$stats")
-fi
-duration=$(awk -F, '!/^#/{if(!f)f=$1; l=$1} END{printf "%.3f", (l-f)*1e-9}' "$imu")
-echo "peak_rss_mb=$rss_mb budget=8"
-echo "imu_seconds=$duration wall_seconds=$secs ms_per_imu_s=$(awk -v s="$secs" -v d="$duration" 'BEGIN{printf "%.3f", s*1000/d}') budget=20"
+python3 -X tracemalloc - "$imu" "$out" <<'PY'
+import runpy, sys, time, tracemalloc
+imu, out = sys.argv[1:3]
+sys.argv = ["main.py", imu, out]
+start = time.perf_counter()
+runpy.run_path("src/main.py", run_name="__main__")
+wall = time.perf_counter() - start
+peak = tracemalloc.get_traced_memory()[1]  # read before this harness allocates anything of its own
+rows = [ln.split()[0] for ln in open(out)]
+seconds = float(rows[-1]) - float(rows[0])
+print(f"peak_traced_mb={peak / 1e6:.2f} budget=8")
+print(f"imu_seconds={seconds:.3f} wall_seconds={wall:.3f} ms_per_imu_s={wall * 1000 / seconds:.3f} budget=20 (tracing on, so an upper bound)")
+PY
+start=$(python3 -c 'import time; print(time.time())')
+python3 src/main.py "$imu" "$out"
+python3 - "$start" "$out" <<'PY'
+import sys, time
+wall = time.time() - float(sys.argv[1])
+rows = [ln.split()[0] for ln in open(sys.argv[2])]
+seconds = float(rows[-1]) - float(rows[0])
+print(f"untraced whole process: wall_seconds={wall:.3f} ms_per_imu_s={wall * 1000 / seconds:.3f} budget=20")
+PY
 python3 research/eval/validate_format.py "$out" "$imu"

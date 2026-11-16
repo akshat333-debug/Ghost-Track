@@ -47,9 +47,9 @@ def variants(kind, n):
     return [dev_variant(i) for i in range(n)]
 
 
-def evaluate(method, split, kind, n):
+def evaluate(method, split, kind, n, only=None):
     rows = []
-    for name in sequences(split):
+    for name in [s for s in sequences(split) if not only or s in only]:
         t_ns, gyro, accel, gt = load_seq(name)
         for i, var in enumerate(variants(kind, n)):
             df, man = degrade_arrays(t_ns, gyro, accel, **var)
@@ -70,11 +70,12 @@ if __name__ == "__main__":
     ap.add_argument("--split", default="train")
     ap.add_argument("--variant", choices=["dev", "official"], default="dev")
     ap.add_argument("--n", type=int, default=4, help="dev variants per sequence")
+    ap.add_argument("--seqs", nargs="+", help="subset of the split")
     ap.add_argument("--out", help="write per-run rows as JSON, for paired keep-rule comparisons")
     a = ap.parse_args()
     if a.variant == "official" and a.split == "train":
         sys.exit("official config is report-only: use val or held-out (D-017)")
-    rows = evaluate(a.method, a.split, a.variant, a.n)
+    rows = evaluate(a.method, a.split, a.variant, a.n, a.seqs)
     for stat in (np.nanmean, np.nanmedian):
         print(stat.__name__[3:].upper(), " ".join(f"{k}={stat([r[k] for r in rows]):.3f}" for k in KEYS))
     if a.out:

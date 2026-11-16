@@ -4,12 +4,13 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ## Next up (16 Nov replan; schedule in `docs/PLAN.md` header)
 - [x] Follow-up questions: not sent, user decision 16 Nov; handled by detection and two-way tests
-- [ ] One-shot baseline: frozen ESKF on official-degraded val, logged before any tuning (D-007 rule 2)
-- [ ] Gate G1: `python3 -m research.eval.drag_gate` (D-019)
+- [x] One-shot baseline: frozen ESKF on official-degraded val, logged before any tuning (D-007 rule 2)
+- [x] Gate G1: `python3 -m research.eval.drag_gate` (D-019)
 - [x] `src/main.py` v0 (parser, front end, attitude, CLI), budget + robustness tests, Dockerfile, `scripts/measure_budget.sh` for Python
-- [ ] Backup zip 1 once v0 at least ties never-moving
-- [ ] 18 Nov: node filter + RTS in pure Python; drag measurement if G1 passed; keep-rule verdict on dev variants
-- [ ] 19 Nov: blind forecaster CV, val confirmation, sweeps, Docker budgets, held-out run 1
+- [x] Backup zip 1 once v0 at least ties never-moving
+- [x] 18 Nov: node filter + RTS in pure Python; drag measurement if G1 passed; keep-rule verdict on dev variants
+- [x] Blind forecaster selection, val confirmation, held-out run 1
+- [ ] Linux Docker budget numbers
 - [ ] 20 Nov: freeze; README, `scripts/make_zip.sh`, fresh-clone repro, deck, brownie (sensor-health timeline + replay)
 - [ ] 21 Nov: video, self-audit, repo public, submit
 - Cancelled by D-015/D-018: C++ RTS, C++ Docker build, L2 net, GRU forecaster.
@@ -63,6 +64,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 17 Nov — blind forecast, held-out run 1, bundle
+- Done: D-026 (blind relaxes to path centre). Held-out run 1 of 3: ATE 2.67 m vs 2.87 m never-moving, all 8 runs below it. `scripts/make_zip.sh` builds `submission/VITVellore_ZeroDrift.zip` (files at zip root, trajectory from MH_01_easy through the official script). `README.md` and `src/README.md` rewritten. `scripts/run_heldout.sh` now runs the official degradation.
+- Next: deck from `Submission_Final_forGithub.pptx`, 2-3 min video, brownie (sensor-health timeline + replay), Linux Docker budget numbers, commit the zip and make the repo public at submission.
+- Gotchas: 2 held-out runs left; any estimator change needs a new run before quoting numbers. `*.zip` is gitignored, so the bundle must be force-added when frozen.
 ### 16 Nov — drag filter in `src/main.py`
 - Done: D-024 (streaming core at or below never-moving), D-025 (8-state node filter + backward pass + drag measurement, shipped as a keep-rule exception). Val official: ATE 3.56 m against 3.90 m never-moving, RPE 0.66 against 1.00.
 - Next: blind-window selection by grouped CV on train (room5 blind is 4x worse than never-moving), then held-out run 1, `scripts/make_zip.sh`, README, deck, video.

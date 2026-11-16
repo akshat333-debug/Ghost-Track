@@ -9,13 +9,15 @@ clean="${1:-research/data/euroc/MH_01_easy/mav0/imu0/data.csv}"
 name=VITVellore_ZeroDrift
 work=build/bundle
 rm -rf "$work" && mkdir -p "$work/sample/imu0" "$work/$name/src" submission
+# files sit at the zip root, as drawn on slide 17
 python3 research/official/degrade_imu.py "$clean" "$work/sample/imu0/data.csv" > "$work/degrade.log"
 python3 -X tracemalloc - "$work/sample/imu0/data.csv" "$work/$name/estimated_trajectory.txt" "$clean" > "$work/$name/metadata.json" <<'PY'
-import json, platform, runpy, subprocess, sys, time, tracemalloc
+import runpy, sys, tracemalloc
 imu, out, clean = sys.argv[1:4]
 sys.argv = ["main.py", imu, out]
 runpy.run_path("src/main.py", run_name="__main__")
 peak = tracemalloc.get_traced_memory()[1]
+import json, platform, subprocess, time  # after the measurement: these imports are the harness's, not the estimator's
 walls = []
 for _ in range(3):
     t = time.perf_counter()
@@ -38,6 +40,6 @@ print(json.dumps({
 PY
 python3 research/eval/validate_format.py "$work/$name/estimated_trajectory.txt" "$work/sample/imu0/data.csv"
 cp src/main.py src/README.md "$work/$name/src/"
-(cd "$work" && rm -f "../../submission/$name.zip" && zip -qr "../../submission/$name.zip" "$name")
+(cd "$work/$name" && rm -f "../../../submission/$name.zip" && zip -qr "../../../submission/$name.zip" .)
 unzip -l "submission/$name.zip"
 cat "$work/$name/metadata.json"

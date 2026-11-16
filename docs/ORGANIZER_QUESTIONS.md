@@ -27,3 +27,32 @@ Team Zero Drift (VITVellore_ZeroDrift), Vellore Institute of Technology, Vellore
 ## Answers received
 | date | Q# | answer |
 |---|---|---|
+| 16 Nov | 1 | Algorithm/heap level, not OS RSS. Tool not named. |
+| 16 Nov | 2 | No. Python only, standalone `main.py`. |
+| 16 Nov | 3 | Not answered. |
+| 16 Nov | 4 | Any EuRoC MAV or TUM-VI sequence is fine as sample data; apply `degrade_imu.py`. Evaluation data not described. |
+| 16 Nov | 5 | Waypoints are never given to the estimator; used only inside their scorer. |
+| 16 Nov | 6 | Rows with timestamps exist for the blind 5 s, sensor values invalid. Never append rows. |
+| 16 Nov | 7 | Dropouts are missing rows. One pose per input row. |
+| 16 Nov | 8 | SE(3) Umeyama alignment before ATE. RPE delta not given. |
+| 16 Nov | 9 | Not answered (alignment makes the start frame free). |
+| 16 Nov | 10 | 2–3 minutes, hard maximum 3. |
+| 16 Nov | — | Offline batch smoothing over the whole file is allowed. Deadline 22 Nov. |
+
+## Follow-up questions (drafted 16 Nov, to srikanth.s2@samsung.com and prakhar.c@samsung.com)
+
+**Subject:** XR Hackathon 2026 – Track 3 – follow-up on degrade_imu.py and evaluation run – VITVellore_ZeroDrift
+
+Hello,
+
+Thank you for the FAQ and the degradation script. Six short points so our `main.py` matches your pipeline:
+
+1. **Column order.** `degrade_imu.py` expects `timestamp, accel_xyz, gyro_xyz`, while slide 15 and EuRoC `imu0/data.csv` are `timestamp, gyro_xyz, accel_xyz`. In the evaluation file, which order is used, and was the script applied to the raw EuRoC file or to a reordered copy?
+2. **Run command.** What exact command, working directory and Python version run `main.py`, and which packages are installed (numpy, pandas)? Is the input a path to `imu0/data.csv`, a folder, or the zip?
+3. **Memory.** Which tool measures the 8 MB (for example `tracemalloc`), and do module imports count?
+4. **`estimated_trajectory.txt` in the zip.** Which input should it be generated from?
+5. **Degradation settings.** Is the evaluation `CONFIG` the script default (dropout bursts up to 50 rows), or 2-second dropouts as on slide 13?
+6. **Duplicated rows.** The script can repeat a row with the same timestamp. Should the output contain one pose for each such row?
+
+Thank you,
+Team Zero Drift (VITVellore_ZeroDrift)

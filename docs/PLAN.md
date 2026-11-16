@@ -1,5 +1,21 @@
 # Track 3 "Path Finder" — Full Win Plan (Samsung PRISM XR Hackathon 2026)
 
+> **Amended 16 Nov after the organizer FAQ. Where this section and the text below disagree, this section wins.**
+> - Python only, pure standard library `src/main.py` (D-015). C++ moved to `legacy/cpp/`. Nets retired (D-018).
+> - Official `degrade_imu.py` vendored; column order detected (D-016); tuning only on dev variants (D-017).
+> - Accuracy bet: rotor-drag velocity measurement behind gate G1 (D-019); fallback always shippable.
+> - Deadline 22 Nov 23:59, submit 21 Nov evening. Submissions for more than one track are allowed (user, 16 Nov).
+>
+> | Date | Work | Exit condition |
+> |---|---|---|
+> | 16 Nov | docs, vendor script, data, scorer v2, one-shot baseline, gate G1, organizer email | G1 verdict logged |
+> | 17 Nov | `main.py`: parser, front end, attitude, two passes, CLI, budget + robustness tests | valid in-budget v0, backup zip 1 |
+> | 18 Nov | node filter + RTS in pure Python; drag if G1 passed; dev-variant tuning with grouped CV | keep-rule verdict logged |
+> | 19 Nov | blind forecaster CV, val confirmation, sweeps, Linux Docker budgets | candidate frozen, held-out run 1 |
+> | 20 Nov | freeze at noon; README, Dockerfile, `make_zip.sh`, fresh-clone repro; deck; brownie | fresh clone reproduces the zip |
+> | 21 Nov | video, judging-bar self-audit, final held-out run if code changed, repo public, submit | form submitted |
+> | 22 Nov | buffer | — |
+
 > **Amended 9 Nov.** Binding changes on top of the original 8 Nov plan:
 > - **Full build, nothing cut (D-005):** C++ port regardless of the organizers' memory answer; TUM-VI in training; L2 *and* L3 both built; GRU forecaster built and compared against constant velocity / damped acceleration; interactive replay demo built before submission.
 > - **Selection happens on val, never held-out (D-006):** wherever this plan originally said "beat X on held-out", it now says val. Held-out is report-only.

@@ -1,5 +1,13 @@
 # Architecture
 
+## Design since 16 Nov (D-015, D-016, D-019). Sections below are the 9 Nov design, kept for history.
+`src/main.py`, standard library only, two streaming passes so memory does not grow with file length.
+1. Front end per row: detect column layout by gravity magnitude; classify rows as valid, duplicate, stuck, spike or invalid (NaN or all zero; a trailing invalid run is the blind window); integrate with the real `dt`, so missing rows need no special case; track noise level from first differences.
+2. Pass 1: quaternion attitude and preintegration per row; at nodes about 0.2 s apart an error-state filter (`δp, δv, δθ, b_g, b_a`) with tilt, static, bounded-motion and, if gate G1 passes, rotor-drag velocity measurements.
+3. Backward RTS pass over nodes.
+4. Pass 2: repeat the front end, apply interpolated node corrections, forecast the blind 5 s, write one pose per input row.
+Learned nets (L2, L3, GRU) are retired (D-018).
+
 ## Problem
 Input: degraded IMU (200 Hz gyro + accel incl. gravity, EuRoC CSV, ns timestamps). Degradation escalates over time: noise ↑, bias drift ↑, ~2 s dropouts, unknown gravity alignment, then total IMU failure → predict 5 s blind.
 Output: 6-DoF pose per IMU frame (TUM format). Budget: ≤8 MB RAM, ≤20 ms per 1 s of IMU, 1 thread, offline.

@@ -8,4 +8,8 @@ Start here:
 - Pipeline: `docs/PROJECT_FLOW.md` · Design: `docs/ARCHITECTURE.md`
 - Live status: `TASKS.md` · Decisions: `DECISIONS.md` · Results: `EXPERIMENTS.md`
 
-Setup and run instructions land here as the scripts get built.
+Status 16 Nov: organizer FAQ applied (Python-only, official degradation script). Submission entry point will be `src/main.py`, standard library only. Research harness needs `numpy scipy pandas evo pytest`.
+
+    python3 scripts/download_euroc.py && bash scripts/download_tumvi.sh
+    python3 -m pytest tests -q
+    python3 -m research.eval.drag_gate

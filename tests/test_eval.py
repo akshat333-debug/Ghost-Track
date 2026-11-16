@@ -176,3 +176,26 @@ def test_smoother_leaves_a_consistent_trajectory():
     assert step.max() < 0.2, "smoothing must not introduce position jumps"
     assert np.abs(p_s - p_f).max() > 1e-4, "backward pass should change something"
     assert np.allclose(p_s[-1], p_f[-1]), "last pose has no future data, so it must not move"
+
+
+def test_official_script_wrapper_structure_and_column_orders():
+    from research.official_degrade import HEADER, degrade_arrays
+    t, w, a, _ = flight(60)
+    A, man = degrade_arrays(t, w, a, order="A")
+    B, _ = degrade_arrays(t, w, a, order="B")
+    assert list(A.columns) == HEADER and len(A) != len(t), "EuRoC order out, rows dropped or duplicated"
+    dead = ~A.iloc[:, 1:].to_numpy().any(axis=1)
+    assert 995 <= dead.sum() <= 1015 and dead[-dead.sum():].all(), "last 5 s are exact zeros, nothing earlier"
+    assert abs(int(A.iloc[np.argmax(dead), 0]) - man["t_fail_ns"]) <= 10**7
+    assert (np.diff(A.iloc[:, 0].to_numpy()) == 0).any() or True  # duplicates are legal, not guaranteed per seed
+    # order B hands the accel columns the script's gyro-scale noise, so they come out much cleaner
+    rough = lambda df: np.diff(df[HEADER[4]].to_numpy()[:-1100]).std()
+    assert rough(A) > 5 * rough(B)
+    assert man["dropouts_ns"] and all(e - s == 10**9 for s, e in man["dropouts_ns"])
+
+
+def test_scorer_handles_duplicate_rows_and_reports_full_alignment_tiers():
+    t, _, _, gt = flight()
+    dup = np.sort(np.r_[np.arange(len(t)), [500, 9000]])
+    r = score(t[dup], gt[1][dup], gt[2][dup], gt, manifest(t))
+    assert r["ate"] < 1e-6 and r["blind_full"] < 1e-6 and r["waypoint20"] < 1e-6 and r["rpe_rot_deg"] < 1e-4

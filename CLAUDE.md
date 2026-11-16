@@ -1,7 +1,7 @@
 # Path Finder — agent rules (every team member's Claude reads this first)
 
 Samsung PRISM XR Hackathon 2026, **Track 3: Trajectory Estimation Under Sensor Degradation**.
-Goal: win (top-4 prize + PPO). Final submission **18 Nov 2026, target 18:00** (hard cutoff 23:59, no extension).
+Goal: win (top-4 prize + PPO). Final submission **22 Nov 2026 23:59**, target **21 Nov evening**. Organizer FAQ of 16 Nov: `docs/Track3_FAQ_Responses.txt`.
 Full rules/specs: `docs/hackathondetails.md`. Plan: `docs/PROJECT_FLOW.md`, `docs/ARCHITECTURE.md`.
 
 ## Before any work
@@ -15,8 +15,9 @@ Full rules/specs: `docs/hackathondetails.md`. Plan: `docs/PROJECT_FLOW.md`, `doc
 - **Anti-overfitting (D-007, read it before any tuning or training):** nets train on `augment.py`, never `degrade.py`; choose models by grouped CV; keep rule is fixed in advance; held-out has a 3-run budget.
 - Never use ground truth of the evaluation input inside the estimator. If the organizers' test reuses public sequences, we still never exploit known GT.
 - Every number that goes in the deck/README must have an `EXPERIMENTS.md` row with a commit hash.
-- Submission code (`src/`) must respect budgets: ≤8 MB peak RAM, ≤20 ms per 1 s of IMU, single thread, offline, no network.
-- Output format is exact: `estimated_trajectory.txt`, 8 space-separated cols `timestamp tx ty tz qx qy qz qw`, seconds (ns × 1e-9), unit quaternion, one pose per IMU frame. Run the validator before claiming done.
+- Submission is **Python only**: `src/main.py`, standard library only, no numpy (D-015). Budgets: ≤8 MB heap, ≤20 ms per 1 s of IMU, single thread, offline, no network. Our gates are 6 MB and 6 ms (D-020).
+- Tune only on `dev_variant` degradations of train sequences; the official seed-42 config is report-only (D-017). Never assume column order (D-016). No sequence fingerprinting or ground-truth lookup (D-021).
+- Output format is exact: `estimated_trajectory.txt`, 8 space-separated cols `timestamp tx ty tz qx qy qz qw`, seconds (ns × 1e-9), unit quaternion, one pose per input row (duplicated rows included, never append rows). Run the validator before claiming done.
 
 ## After every unit of work (same commit)
 - Tick/update `TASKS.md` + append a **handoff note** (done / next / gotchas / how to run).
@@ -25,7 +26,7 @@ Full rules/specs: `docs/hackathondetails.md`. Plan: `docs/PROJECT_FLOW.md`, `doc
 - Commit message: `<area>: <what>` (e.g. `eskf: add accel bias state`). Push.
 
 ## Ownership (avoid merge conflicts)
-- **A** — estimator (`research/baselines/`, `src/*.cpp|hpp`).
+- **A** — estimator (`src/main.py`, `research/baselines/`).
 - **B** — learned nets (`research/nets/`, Colab/Kaggle notebooks).
 - **C** — data, degradation, eval (`research/io_euroc.py`, `degrade.py`, `split.py`, `research/eval/`, `scripts/`), docs, video, deck.
 Touch another owner's files only after a quick heads-up in the handoff note.

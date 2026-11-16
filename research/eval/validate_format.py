@@ -18,8 +18,8 @@ def validate(est_path, imu_path):
     t_in = np.loadtxt(imu_path, delimiter=",", comments="#", usecols=0, dtype=np.int64)
     if len(est) != len(t_in):
         raise ValueError(f"{len(est)} poses for {len(t_in)} IMU rows")
-    if (np.diff(est[:, 0]) <= 0).any():
-        raise ValueError("timestamps not strictly increasing")
+    if (np.diff(est[:, 0]) < 0).any():  # equal is legal: the official script duplicates rows
+        raise ValueError("timestamps decreasing")
     # 1 microsecond: doubles at 1.4e9 s resolve about 0.24 microseconds
     off = np.abs(est[:, 0] - t_in * 1e-9).max()
     if off > 1e-6:

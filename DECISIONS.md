@@ -81,3 +81,37 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Likely causes, not yet tested: over-confident uncertainty (1-sigma coverage 0.46–0.73, three of five folds below the required 0.60), and the bounded velocity prior being switched off when the net is active.
 - Current submission candidate: classical ESKF + D-012 blind forecast. The `-DPF_NET` code stays but is not the default.
 
+
+### D-015 · 16 Nov · Submission is one pure-standard-library `src/main.py` (supersedes D-002, D-005 C++ clause, D-008)
+- Organizer FAQ (16 Nov, `docs/Track3_FAQ_Responses.txt`): Python only, `main.cpp` not accepted; 8 MB is measured at algorithm/heap level, not process RSS.
+- Measured: `import numpy` alone is 9.9 MB under `python -X tracemalloc` (bare interpreter 3.0 MB, pandas 39.5 MB). If imports are traced, numpy breaks the limit by itself, so the submission imports only `sys, os, math, array, zipfile`.
+- Measured: pure-Python parse + quaternion integration + rotation + formatting costs 4 µs per row, 0.8 ms per IMU-second at 200 Hz (budget 20 ms).
+- One estimator: the research harness runs `src/main.py` through the file interface, so there is no second implementation and no parity test. C++ moved to `legacy/cpp/`.
+- Rejected: numpy in the submission (memory risk under one plausible measurement), keeping a numpy reference next to `main.py` (two implementations to keep equal).
+
+### D-016 · 16 Nov · Official `degrade_imu.py` adopted; column order is detected, never assumed
+- Vendored unchanged at `research/official/degrade_imu.py`, sha256 `cc7398db47efe8cefb581c13501f43687db2a5a13e7ed89697dc98afcd4b2f31`.
+- Conflict: the script indexes columns 1–3 as accel; slide 15 and EuRoC put gyro there. Run on a raw EuRoC file ("order B"), gyro columns get the accel corruption and accel columns the gyro corruption. The script's unit auto-detect then depends on the sequence: median gyro norm inside 0.5–2 rad/s is read as "g" and the noise is divided by 9.81.
+- `main.py` finds the accel triplet by gravity magnitude and estimates noise levels from the data. The harness scores both orders. Question sent to organizers.
+- Facts read from the script: invalid rows are exact zeros on the last 5 s (only if the file is longer than 7 s); dropouts are missing rows (single ≤6%, bursts 5–50 rows); rows can be duplicated with the same timestamp; stuck runs repeat a row 2–10 times; spikes hit all six channels of one row; first 2 s are protected; seed is fixed at 42.
+
+### D-017 · 16 Nov · Generator roles and scorer (extends D-007, relaxes nothing)
+- Tuning uses only `official_degrade.dev_variant`: seeds ≠ 42, `max_level` 0.5–2, `gamma` 1–2.5, both column orders, bursts up to 400 rows (slide 13 says 2 s dropouts, the script says ≤50 rows). Train sequences only. Old `research/degrade.py` and `augment.py` stay as stress cases.
+- The official config (seed 42, defaults) is report-only: val for confirmation, held-out for the quoted numbers. `run_official.py` refuses it on train.
+- Primary metric: evo translation ATE RMSE after one SE(3) alignment over all poses (FAQ §4). Tier proxies `waypoint20`, `blind_full`, `dropout_full` use the same alignment; the flown-only-alignment versions stay because the organizers' tier method is unknown. Duplicated rows are scored once.
+- evo raises on a constant or collinear estimate, so the output must span two dimensions.
+
+### D-018 · 16 Nov · Learned nets retired
+- D-014 already failed the keep rule. Now they also cannot ship: no torch or numpy (D-015), and an 84k-parameter conv net in pure Python is far above 20 ms per IMU-second. `research/nets/` stays for the record, unused. GRU forecaster (D-005) cancelled.
+
+### D-019 · 16 Nov · Hypothesis: rotor-drag velocity measurement, behind gate G1
+- Physics (Leishman, Macdonald, Beard, McLain 2014): a multirotor's accelerometer reads −k·v in the plane normal to thrust. That is a velocity measurement from the IMU alone, the thing D-011/D-014 could not learn from 1 s windows with random per-window bias.
+- Gate G1, thresholds fixed before the first run (`research/eval/drag_gate.py`): on clean train data, median R² ≥ 0.3 on EuRoC train and k spread < 30% across sequences, at a 0.5 s averaging window. Fail → dropped, thresholds not revisited.
+- If it passes it still has to pass the D-007 keep rule on dev variants, and must not hurt TUM-VI rooms (handheld, no rotors): innovation-based noise inflation has to switch it off there.
+- Fallback that always ships: attitude + bounded-motion filter + RTS smoother + blind forecast.
+
+### D-020 · 16 Nov · Budget gates
+- Whole-process traced peak (`python -X tracemalloc`) ≤ 6 MB on a 3-minute and a 15-minute file; wall time including interpreter start ≤ 6 ms per IMU-second on the dev Mac, re-measured in Linux Docker. Tests enforce both. Two streaming passes over the file keep memory independent of length.
+
+### D-021 · 16 Nov · Integrity line
+- No sequence fingerprinting, no ground-truth lookup, no constant fitted to a named sequence. `main.py` is never told which dataset it reads. The evaluation file may be a public sequence with a fixed seed; that is not used.

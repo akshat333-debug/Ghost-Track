@@ -23,7 +23,18 @@ training (research/nets, Colab)   ▼
                          EXPERIMENTS.md → deck / video / README
 ```
 
-## How to run (fills in as scripts land)
+## Since 16 Nov (D-015 to D-017)
+The estimator is `src/main.py` (pure standard library). Degradation for scoring is the organizers' script through
+`research/official_degrade.py`; `research/degrade.py` is a stress case only.
+
+| step | command | status |
+|---|---|---|
+| score on tuning variants | `python3 -m research.eval.run_official --method src/main.py --split train --variant dev --n 4` | runner done, `main.py` todo |
+| report on official config | `python3 -m research.eval.run_official --method src/main.py --split val --variant official` | runner done |
+| gate G1 | `python3 -m research.eval.drag_gate` | done |
+| run the submission | `python3 src/main.py <imu0/data.csv> estimated_trajectory.txt` | todo |
+
+## How to run (before 16 Nov; C++ rows are historical, code in `legacy/cpp/`)
 | step | command | status |
 |---|---|---|
 | download data | `python3 scripts/download_euroc.py` and `scripts/download_tumvi.sh` (CSV only, about 30 min, resumes) | done |

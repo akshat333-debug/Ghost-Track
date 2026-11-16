@@ -3,6 +3,13 @@
 Source: `XR_Hackathon_2026_Consolidated_Slides_for_sharing_v1.pdf` (28 slides) + launch poster/invite.
 Organizer: XR Perception Group + PRISM team, **Samsung R&D Institute India, Bangalore (SRI-B)**. Queries: prism@samsung.com
 
+## Update 16 Nov (organizer emails; overrides dates below)
+- Final submission **22 Nov**, top-12 announced 29 Nov, final demo 9 Dec, results 12 Dec.
+- Submit through https://forms.gle/86xENrtqhx988hBt8. Everything (code, resources, document, demo, ppt, package, readme) in a **public GitHub** repo; share the link in the form.
+- Deck template: `Submission_Final_forGithub.pptx` (title/team, problem, solution, architecture, track final output, differentiation, demo & local setup, brownie, thank you).
+- "First try to achieve [the required output], then go for the brownie feature."
+- Track 3 FAQ: `docs/Track3_FAQ_Responses.txt`. Queries: srikanth.s2@samsung.com, prakhar.c@samsung.com (general: m.shankar@samsung.com).
+
 ## Timeline (tentative, "subject to minor changes")
 
 | Date | Event |

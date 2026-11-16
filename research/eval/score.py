@@ -26,12 +26,14 @@ def _ape(gt, est, relation=metrics.PoseRelation.translation_part):
 
 
 def _rmse(e):
-    return float(np.sqrt(np.mean(np.sum(e ** 2, axis=1))))
+    return float(np.sqrt(np.mean(np.sum(e ** 2, axis=1)))) if len(e) else float("nan")
 
 
 def score(t_ns, p, q, gt, manifest):
     """t_ns, p, q: one pose per input row. gt: (t_ns, p, q) from load_gt, in the original body frame."""
     gt_t, gt_p, gt_q = gt
+    first = np.r_[True, np.diff(t_ns) > 0]  # the official script duplicates rows; score each timestamp once
+    t_ns, p, q = t_ns[first], p[first], q[first]
     mount = R.from_quat(manifest["mount_xyzw"])
     gt_q = (R.from_quat(gt_q) * mount.inv()).as_quat()  # GT orientation of the mounted sensor
     a, b = sync.associate_trajectories(_traj(gt_t, gt_p, gt_q), _traj(t_ns, p, q), max_diff=0.01)
@@ -53,6 +55,11 @@ def score(t_ns, p, q, gt, manifest):
                       all_pairs=False)
     rpe.process_data((a, b))
     out["rpe_1s"] = float(rpe.get_statistic(metrics.StatisticsType.rmse))
+    rot = metrics.RPE(metrics.PoseRelation.rotation_angle_deg, delta=rpe.delta, delta_unit=metrics.Unit.frames,
+                      all_pairs=False)
+    rot.process_data((a, b))
+    out["rpe_rot_deg"] = float(rot.get_statistic(metrics.StatisticsType.rmse))
+    full = aligned.positions_xyz - a.positions_xyz  # organizers align once over everything (FAQ section 4)
 
     # Align on the flown part only, so blind-window error cannot be hidden by the alignment.
     t_fail = manifest["t_fail_ns"] * 1e-9
@@ -62,15 +69,18 @@ def score(t_ns, p, q, gt, manifest):
 
     wp = np.linspace(0, flown.sum() - 1, WAYPOINTS).astype(int)
     out["waypoint"] = _rmse(err[flown][wp])
+    out["waypoint20"] = _rmse(full[flown][np.linspace(0, flown.sum() - 1, 2 * WAYPOINTS).astype(int)])
     blind = ~flown
     out["blind"] = _rmse(err[blind])
-    out["blind_end"] = float(np.linalg.norm(err[blind][-1]))
+    out["blind_full"] = _rmse(full[blind])
+    out["blind_end"] = float(np.linalg.norm(err[blind][-1])) if blind.any() else float("nan")
     in_drop = np.zeros(len(ts), bool)
     for s, e in manifest["dropouts_ns"]:
         in_drop |= (ts >= s * 1e-9) & (ts < e * 1e-9)
     out["dropout"] = _rmse(err[in_drop])
+    out["dropout_full"] = _rmse(full[in_drop])
     # Zero-effort reference: a tracker that never moves from the flown centroid. Must be beaten to claim skill.
     still = a.positions_xyz - a.positions_xyz[flown].mean(axis=0)
     out["null_ate"], out["null_blind"] = _rmse(still), _rmse(still[blind])
-    out["proxy60"] = float(sum(mx * np.exp(-out[k] / scale) for k, (mx, scale) in PROXY.items()))
+    out["proxy60"] = float(np.nansum([mx * np.exp(-out[k] / scale) for k, (mx, scale) in PROXY.items()]))
     return out

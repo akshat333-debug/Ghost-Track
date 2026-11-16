@@ -2,7 +2,18 @@
 
 Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C++, B nets, C data/eval/docs.
 
-## Next up
+## Next up (16 Nov replan; schedule in `docs/PLAN.md` header)
+- [ ] Send follow-up questions in `docs/ORGANIZER_QUESTIONS.md` (user)
+- [ ] One-shot baseline: frozen ESKF on official-degraded val, logged before any tuning (D-007 rule 2)
+- [ ] Gate G1: `python3 -m research.eval.drag_gate` (D-019)
+- [ ] 17 Nov: `src/main.py` v0 (parser, front end, attitude, two passes, CLI), budget + robustness tests, Dockerfile, `scripts/measure_budget.sh` for Python, backup zip 1
+- [ ] 18 Nov: node filter + RTS in pure Python; drag measurement if G1 passed; keep-rule verdict on dev variants
+- [ ] 19 Nov: blind forecaster CV, val confirmation, sweeps, Docker budgets, held-out run 1
+- [ ] 20 Nov: freeze; README, `scripts/make_zip.sh`, fresh-clone repro, deck, brownie (sensor-health timeline + replay)
+- [ ] 21 Nov: video, self-audit, repo public, submit
+- Cancelled by D-015/D-018: C++ RTS, C++ Docker build, L2 net, GRU forecaster.
+
+## Earlier list (before the FAQ)
 - [ ] Waiting on organizer reply to questions sent 9 Nov; log answers in `docs/ORGANIZER_QUESTIONS.md` (C)
 - [ ] Day 0 — Download EuRoC + TUM-VI CSVs: `scripts/download_euroc.py`, `scripts/download_tumvi.sh`; each teammate runs once (in progress)
 - [ ] Day 0 — Read AirIMU, AirIO, TLIO, RoNIN; summary in `docs/LITERATURE.md` (B)
@@ -51,6 +62,11 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 16 Nov — FAQ pivot
+- Done: FAQ and official script read and vendored; D-015 to D-021; C++ moved to `legacy/cpp/`; `research/official_degrade.py`, `research/eval/run_official.py`, `research/eval/drag_gate.py`; scorer reports full-alignment tiers and tolerates duplicated rows; 17 tests pass.
+- Next: baseline row, G1, then `src/main.py`.
+- Gotchas: `Dockerfile` and `scripts/measure_budget.sh` still build the C++ and are broken until `main.py` lands. Never tune on `--variant official`. Order B noise depends on the sequence because of the script's unit auto-detect (D-016).
+- How to run: `python3 -m pytest tests -q`
 ### 9 Nov — 5-fold verdict
 - Done: L3 failed the D-007 keep rule (D-014). Do not relax thresholds to pass it.
 - Next: choose between calibrating fusion (no retraining) and a drone-focused rebuild. Candidate pipeline meanwhile is classical ESKF + D-012.

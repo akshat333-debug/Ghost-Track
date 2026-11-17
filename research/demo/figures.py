@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Figures for the deck and README, from validation sequences on the organizers' degradation (report only).
 
-python -m research.demo.figures        # writes docs/figures/*.png
+python -m research.demo.figures        # writes demo/figures/*.png
 """
 import subprocess
 import sys
@@ -18,7 +18,7 @@ from research.io_euroc import load_seq
 from research.official_degrade import degrade_arrays, write_csv
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-OUT = ROOT / "docs" / "figures"
+OUT = ROOT / "demo" / "figures"
 DARK = "--dark" in sys.argv  # for the deck, whose template is dark; saved with a transparent background
 if DARK:
     OUT = OUT / "dark"

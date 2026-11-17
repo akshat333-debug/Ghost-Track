@@ -10,7 +10,7 @@ One pose per input data row, in row order, including duplicated rows; rows are n
 Standard library only and streaming: memory does not grow with file length.
 
 Nothing about the sensor layout is assumed: column order (gyro-first or accel-first), accel unit, timestamp
-unit, gravity magnitude and start attitude are measured from the first rows; noise levels are tracked online.
+unit, sample rate, gravity magnitude and start attitude are measured from the first rows.
 """
 import math
 import os
@@ -137,6 +137,20 @@ def median(xs):
     return 0.5 * (xs[(n - 1) // 2] + xs[n // 2]) if n else 0.0
 
 
+def time_digits(ts):
+    """Returns (decimal digits of the timestamp unit: 0 s, 3 ms, 6 us, 9 ns; median positive step)."""
+    steps = [b - a for a, b in zip(ts, ts[1:]) if b > a]
+    if not ts or not steps:
+        return 9, 5e6  # nothing to measure: the documented EuRoC format, nanoseconds at 200 Hz
+    step = median(steps)
+    t0 = abs(ts[0])
+    if t0 > 1e8:
+        # epoch time: the magnitude names the unit whatever the sample rate is
+        return (0 if t0 < 1e11 else 3 if t0 < 1e14 else 6 if t0 < 1e17 else 9), step
+    # time since start: go by the step, with the same thresholds as the organizers' script
+    return (0 if step < 1.0 else 3 if step < 1e3 else 6 if step < 1e6 else 9), step
+
+
 def probe(source):
     """Measures what the brief leaves unknown, from the first rows (the least degraded part of the file)."""
     ts, rows, nbytes = [], [], 0
@@ -151,10 +165,7 @@ def probe(source):
                 rows.append(r[1])
             if len(ts) >= PROBE_ROWS:
                 break
-    steps = [b - a for a, b in zip(ts, ts[1:]) if b > a]
-    step = median(steps) if steps else 1.0
-    # same thresholds as the organizers' script
-    digits = 0 if step < 1.0 else 3 if step < 1e3 else 6 if step < 1e6 else 9
+    digits, step = time_digits(ts)
     cfg = {"digits": digits, "scale": 10.0 ** -digits, "dt": step * 10.0 ** -digits, "rows": len(ts)}
     # rough duration from the file size, only to keep the node count bounded on very long files
     seconds = file_bytes(source) / max(1.0, nbytes / max(1, len(ts))) * cfg["dt"]
@@ -378,6 +389,8 @@ def integrate(source, cfg, out, track):
                     px, py = tx_[i] + u * (tx_[i + 1] - tx_[i]), ty_[i] + u * (ty_[i + 1] - ty_[i])
                 # The evaluator's SE(3) alignment fails on a constant or straight path (a sensor that never moves).
                 # A half-millimetre circle keeps every output alignable and costs nothing measurable.
+                if not (-1e6 < px < 1e6 and -1e6 < py < 1e6 and -1e6 < pz < 1e6 and qw == qw):
+                    raise ArithmeticError("non-finite pose")  # main() then writes the fallback file
                 ang = HELIX_RAD_S * el
                 pose = " %.6f %.6f %.6f %.9f %.9f %.9f %.9f\n" % (px + HELIX_M * cos(ang), py + HELIX_M * sin(ang), pz,
                                                                  qx, qy, qz, qw)
@@ -595,8 +608,19 @@ def smooth_nodes(cols, cfg):
     return X, Y
 
 
-def fallback(source, out_path, digits):
-    """No usable sensor row at all. A constant path cannot be aligned by the evaluator, so trace a 1 mm helix."""
+def fallback(source, out_path, digits=None):
+    """No usable sensor row, or the estimator failed. Every row still gets a pose. A constant path cannot be
+    aligned by the evaluator, so trace a 1 mm helix."""
+    if digits is None:
+        ts = []
+        with open_lines(source) as f:
+            for line in f:
+                r = split_row(line)
+                if r is not None:
+                    ts.append(r[0])
+                    if len(ts) >= PROBE_ROWS:
+                        break
+        digits = time_digits(ts)[0]
     with open_lines(source) as f, open(out_path, "w") as out:
         i = 0
         for line in f:
@@ -617,7 +641,13 @@ def main(argv):
     out = argv[2] if len(argv) > 2 else "estimated_trajectory.txt"
     if os.path.isdir(out):
         out = os.path.join(out, "estimated_trajectory.txt")
-    run(source, out)
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    try:
+        run(source, out)
+    except Exception as e:
+        # A missing or broken output file scores nothing. A neutral trajectory with one pose per row stays valid.
+        sys.stderr.write("estimator failed (%r); writing the fallback trajectory\n" % (e,))
+        fallback(source, out)
 
 
 if __name__ == "__main__":

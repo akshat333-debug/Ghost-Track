@@ -14,7 +14,7 @@ from research.official_degrade import degrade_arrays, write_csv
 from test_eval import flight
 
 MAIN = str(Path(__file__).resolve().parent.parent / "src" / "main.py")
-MEMORY_MB, MS_PER_IMU_S = 7.0, 8.0  # D-020 gates; the organizers' limits are 8 MB and 20 ms
+ALGORITHM_MB, WITH_COMPILE_MB, MS_PER_IMU_S = 3.0, 4.0, 8.0  # our gates (D-028); organizer limits: 8 MB, 20 ms
 
 
 def run_main(*args, cwd=None):
@@ -94,13 +94,16 @@ def variant(name, lines):
         return [head] + [",".join(cell(ln)[:4] + ["%.9f" % (float(x) / 9.80665) for x in cell(ln)[4:]]) for ln in body]
     if name == "duplicates_at_start":
         return [head, body[0], body[0], body[0]] + body[1:]
+    if name == "nanoseconds_at_2khz":  # a step below 1e6 ns must not be read as microseconds
+        t0 = int(cell(body[0])[0])
+        return [head] + ["%d," % (t0 + i * 500000) + ",".join(cell(ln)[1:]) for i, ln in enumerate(body)]
     if name == "half_rate":
         return [head] + body[::2]
     raise KeyError(name)
 
 
 CASES = ["motionless", "no_header", "crlf", "shorter_than_failure_block", "nan_tail", "empty_fields_mid_file", "all_rows_dead",
-         "float_timestamps", "seconds", "microseconds", "accel_in_g", "duplicates_at_start", "half_rate"]
+         "float_timestamps", "seconds", "microseconds", "accel_in_g", "duplicates_at_start", "nanoseconds_at_2khz", "half_rate"]
 
 
 @pytest.mark.parametrize("name", CASES)
@@ -119,29 +122,25 @@ def test_robustness_matrix(tmp_path, name):
     assert np.abs(np.linalg.norm(out[:, 4:], axis=1) - 1).max() < 1e-6
     assert (np.diff(out[:, 0]) >= 0).all()
     assert np.linalg.matrix_rank(out[:, 1:4] - out[:, 1:4].mean(axis=0), tol=1e-3) >= 2, "evo cannot align a line"
-    if name in ("no_header", "crlf", "float_timestamps", "microseconds", "accel_in_g", "duplicates_at_start"):
+    if name in ("no_header", "crlf", "float_timestamps", "microseconds", "accel_in_g", "duplicates_at_start", "nanoseconds_at_2khz"):
         expect = t[0] * 1e-9
         assert abs(out[0, 0] - expect) < 1e-5, "timestamps must come out in seconds"
+    if name in ("no_header", "crlf", "float_timestamps", "microseconds", "accel_in_g", "duplicates_at_start"):
         up = R.from_quat(out[:, 4:8]).apply([0, 0, 1.0])[:, 2]
         # the circling flight starts with 1 m/s^2 centripetal acceleration: 5.8 deg of honest start tilt error
         assert up.min() > np.cos(np.radians(7)), "level flight must stay level"
 
 
-def measure(csv, est):
-    code = ("import runpy, sys, time, tracemalloc\n"
-            "t = time.perf_counter()\n"
-            f"sys.argv = ['main.py', {str(csv)!r}, {str(est)!r}]\n"
-            f"runpy.run_path({MAIN!r}, run_name='__main__')\n"
-            "print(tracemalloc.get_traced_memory()[1] / 1e6, time.perf_counter() - t)\n")
-    out = subprocess.run([sys.executable, "-X", "tracemalloc", "-c", code], check=True, capture_output=True, text=True)
-    return map(float, out.stdout.split())
-
-
 @pytest.mark.parametrize("seconds", [180, 900])
 def test_memory_budget_does_not_grow_with_length(tmp_path, seconds):
+    import json
     csv, *_ = degraded(tmp_path, seconds=seconds)
-    peak_mb, _ = measure(csv, tmp_path / "est.txt")
-    assert peak_mb < MEMORY_MB, f"{peak_mb:.2f} MB traced from interpreter start, imports included"
+    probe = str(Path(MAIN).parent.parent / "scripts" / "heap_probe.py")
+    out = subprocess.run([sys.executable, probe, str(csv), str(tmp_path / "est.txt")], check=True, capture_output=True,
+                         text=True)
+    heap = json.loads(out.stdout)
+    assert heap["algorithm_mb"] < ALGORITHM_MB, heap
+    assert heap["with_compile_mb"] < WITH_COMPILE_MB, heap
 
 
 def test_runtime_budget(tmp_path):
@@ -154,3 +153,21 @@ def test_runtime_budget(tmp_path):
         walls.append(time.perf_counter() - start)
     ms = min(walls) * 1000 / 180
     assert ms < MS_PER_IMU_S, f"{ms:.2f} ms per IMU-second"
+
+
+def test_estimator_failure_still_writes_one_pose_per_row(tmp_path, capsys):
+    import importlib.util
+    csv, df, *_ = degraded(tmp_path, seconds=20)
+    spec = importlib.util.spec_from_file_location("pf_main_under_test", MAIN)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    def boom(*_):
+        raise ZeroDivisionError("injected")
+    mod.smooth_nodes = boom
+    est = tmp_path / "new_folder" / "est.txt"  # the output folder does not exist yet
+    mod.main(["main.py", str(csv), str(est)])
+    assert "fallback" in capsys.readouterr().err
+    validate(str(est), str(csv))
+    out = np.array(rows(est), dtype=float)
+    assert np.linalg.matrix_rank(out[:, 1:4] - out[:, 1:4].mean(axis=0), tol=1e-3) >= 2

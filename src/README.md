@@ -2,7 +2,7 @@
 
 IMU-only 6-DoF trajectory estimation under sensor degradation. Python 3 standard library only: nothing to
 install, single thread, no network, no files other than the input and the output.
-Tested on Python 3.9, 3.12, 3.13 and 3.14: the output file is byte-identical on all of them.
+Tested on Python 3.9, 3.12, 3.13, 3.14 and in Docker on Linux: the output file is byte-identical on all of them.
 
 ## Run
 
@@ -35,5 +35,6 @@ start attitude. A header line is optional.
 
 ## Budgets (limits: 8 MB, 20 ms per second of IMU)
 
-See `../metadata.json` for the numbers measured when this bundle was built. Memory there is the strictest
-reading: Python heap traced from interpreter start, imports and script compilation included.
+See `../metadata.json` for the numbers measured when this bundle was built: about 1 MB of Python heap while
+estimating, under 3 MB counting the one-off compilation of this script, and about 2 ms per second of IMU.
+If anything inside the estimator ever fails, a neutral trajectory with one pose per row is still written.

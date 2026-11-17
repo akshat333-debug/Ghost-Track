@@ -10,7 +10,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 - [x] Backup zip 1 once v0 at least ties never-moving
 - [x] 18 Nov: node filter + RTS in pure Python; drag measurement if G1 passed; keep-rule verdict on dev variants
 - [x] Blind forecaster selection, val confirmation, held-out run 1
-- [ ] Linux Docker budget numbers
+- [x] Linux Docker budget numbers
 - [ ] 20 Nov: freeze; README, `scripts/make_zip.sh`, fresh-clone repro, deck, brownie (sensor-health timeline + replay)
 - [ ] 21 Nov: video, self-audit, repo public, submit
 - Cancelled by D-015/D-018: C++ RTS, C++ Docker build, L2 net, GRU forecaster.
@@ -64,6 +64,10 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator+C+
 
 ---
 ## Handoff notes (newest on top)
+### 17 Nov — audit, Docker, clean-up (D-028)
+- Done: Docker verified; memory re-measured with `scripts/heap_probe.py`; four audit fixes in `src/main.py` (output unchanged on the sample); dead code and stale docs removed (tag `pre-cleanup` keeps them); folders reorganised; README, CLAUDE.md, ARCHITECTURE, deck, zip rebuilt.
+- Open, needs a person: member details on deck slide 1, video recording and link on slide 7, repo public, form.
+- Gotchas: after any change under `src/`: `scripts/make_zip.sh`, `git add -f submission/VITVellore_ZeroDrift.zip`. Deck: `python3 -m research.demo.build_deck` overwrites `presentation/VITVellore_ZeroDrift.pptx`, so hand edits to the deck (member names, video link) must be made after the last rebuild or added to `research/demo/build_deck.py`.
 ### 17 Nov — figures, deck, self-audit
 - Done: `docs/figures/` (+ dark set), `docs/VITVellore_ZeroDrift.pptx` on the organizers' template, `docs/VIDEO_SCRIPT.md`, `requirements.txt`, `docs/ARCHITECTURE.md` as shipped, zip committed (`submission/VITVellore_ZeroDrift.zip`, force-added). Organizer-path check: `evo_ape tum <gt> estimated_trajectory.txt --align` accepts the bundled file with its 49 duplicated timestamps. Fresh clone: 37 tests pass.
 - Open, needs a person: member details on deck slide 1, video recording and its link on slide 7, Docker run check (Docker Desktop was not running), merge to `main`, repo public, form.

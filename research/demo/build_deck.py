@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fills the organizers' deck template (docs/Submission_template.pptx) -> docs/VITVellore_ZeroDrift.pptx.
+"""Fills the organizers' deck template (presentation/template.pptx) -> presentation/VITVellore_ZeroDrift.pptx.
 
 Numbers are the held-out run 1 and budget rows of EXPERIMENTS.md. Figures: python -m research.demo.figures --dark
 python -m research.demo.build_deck
@@ -12,7 +12,7 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-FIG = ROOT / "docs" / "figures" / "dark"
+FIG = ROOT / "demo" / "figures" / "dark"
 INK, MUTED, BLUE, ORANGE, CARD = RGBColor(0xF0, 0xEF, 0xEC), RGBColor(0xA9, 0xB1, 0xC4), RGBColor(0x39, 0x87, 0xE5), \
     RGBColor(0xD9, 0x59, 0x26), RGBColor(0x14, 0x1B, 0x2E)
 
@@ -60,7 +60,7 @@ def set_text(shape, s):
 
 
 def build():
-    prs = Presentation(str(ROOT / "docs" / "Submission_template.pptx"))
+    prs = Presentation(str(ROOT / "presentation" / "template.pptx"))
     s = list(prs.slides)
 
     # 1 title
@@ -71,7 +71,7 @@ def build():
     tf.paragraphs[0].runs[0].text = "Team Zero Drift (VITVellore_ZeroDrift)"
     tf.paragraphs[1].runs[0].text = "Vellore Institute of Technology, Vellore"
     text(s[0], 0.55, 3.75, 7.6, 1.2, [("IMU-only 6-DoF trajectory under sensor degradation", {"size": 18, "bold": True}),
-                                      ("Pure standard-library Python · 6.5 MB · 2–4 ms per second of IMU", {"size": 13, "color": MUTED})])
+                                      ("Pure standard-library Python · about 1 MB of heap · under 2 ms per second of IMU", {"size": 13, "color": MUTED})])
 
     # 2 problem
     text(s[1], 0.4, 1.1, 4.3, 4.2, [
@@ -117,7 +117,7 @@ def build():
         "Offline processing is allowed, so the smoother uses the future to correct the past."], size=12)
     text(s[3], 5.1, 3.2, 4.5, 2.1, [
         ("One file, no dependencies", {"size": 14, "bold": True, "color": BLUE}),
-        "src/main.py imports only the Python standard library. Importing numpy alone costs 9.9 MB of traced heap, above the whole budget.",
+        "src/main.py imports only the Python standard library. Importing numpy alone costs 9.9 MB of traced heap, above the whole budget. Ours: 1.1 MB while estimating, 2.9 MB with script compilation.",
         "Filter state: position, velocity, acceleration error and accelerometer bias in the horizontal plane (8 numbers).",
         ("Tools and tech stack: Python 3 standard library (submission); numpy, scipy, pandas, evo, pytest, matplotlib (evaluation only); Docker; Git.", {"color": MUTED, "size": 11})], size=12)
 
@@ -130,8 +130,8 @@ def build():
         "Run: python3 src/main.py <imu0/data.csv> estimated_trajectory.txt"], size=12)
     stat(s[4], 0.4, 2.85, 1.42, "2.67 m", "held-out ATE (never moving: 2.87 m)")
     stat(s[4], 1.94, 2.85, 1.42, "8 of 8", "held-out runs better than never moving")
-    stat(s[4], 3.48, 2.85, 1.42, "6.5 MB", "heap incl. interpreter (limit 8)")
-    stat(s[4], 0.4, 4.12, 1.42, "2–4 ms", "per second of IMU (limit 20)")
+    stat(s[4], 3.48, 2.85, 1.42, "1.1 MB", "heap while estimating (limit 8)")
+    stat(s[4], 0.4, 4.12, 1.42, "1.5 ms", "per second of IMU (limit 20)")
     stat(s[4], 1.94, 4.12, 1.42, "0.59 m", "relative error over 1 s")
     stat(s[4], 3.48, 4.12, 1.42, "1.92 m", "blind 5 s (never moving: 2.13 m)")
     picture(s[4], "heldout_ate.png", 5.05, 1.1, 4.75)
@@ -173,8 +173,8 @@ def build():
         "Demo video: [add link]",
         ("In the repository", {"size": 14, "bold": True, "color": BLUE}),
         "README.md: results and limits",
-        "DECISIONS.md: every design decision with its evidence, including the ones that failed",
-        "EXPERIMENTS.md: every reported number with its commit",
+        "docs/DECISIONS.md: every design decision with its evidence, including the ones that failed",
+        "docs/EXPERIMENTS.md: every reported number with its commit",
         "submission/VITVellore_ZeroDrift.zip: the bundle"], size=12)
 
     # 8 brownie
@@ -187,7 +187,7 @@ def build():
     text(s[7], 5.85, 4.35, 3.95, 1.0, [
         ("Top view: our estimate stays near the centre of a 20 m path. This is the limit of IMU-only tracking, shown rather than hidden.", {"size": 11.5, "color": MUTED})])
 
-    out = ROOT / "docs" / "VITVellore_ZeroDrift.pptx"
+    out = ROOT / "presentation" / "VITVellore_ZeroDrift.pptx"
     prs.save(str(out))
     return out
 

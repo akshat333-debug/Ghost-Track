@@ -1,13 +1,9 @@
 """Self-checks for the harness on a synthetic flight. Run: python -m pytest tests -q"""
-import re
-from pathlib import Path
-
 import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation as R
 
 from research.baselines.naive import G, hold_last, run
-from research.degrade import BLIND_S, degrade
 from research.eval.score import score
 from research.eval.validate_format import validate
 from research.io_euroc import write_imu_csv, write_tum
@@ -61,20 +57,6 @@ def test_hold_last():
     assert hold_last(x).ravel().tolist() == [1, 1, 2, 2]
 
 
-def test_degrade_structure():
-    t, w, a, _ = flight(120)
-    t2, w2, a2, m = degrade(t, w, a, seed=3)
-    T = t2 * 1e-9
-    bad = np.isnan(w2[:, 0])
-    assert (t2 - t2[0]).max() * 1e-9 == pytest.approx((m["t_fail_ns"] - t2[0]) * 1e-9 + BLIND_S, abs=0.02)
-    assert bad[T > m["t_fail_ns"] * 1e-9].all()
-    for s, e in m["dropouts_ns"]:
-        inside = (t2 >= s + 10**7) & (t2 < e - 10**7)
-        assert bad[inside].all() and (e - s) == pytest.approx(2e9, abs=1e6)
-    # same seed reproduces, different seed does not
-    assert m == degrade(t, w, a, seed=3)[3] and m != degrade(t, w, a, seed=4)[3]
-    assert np.isnan(w).sum() == 0, "input must stay untouched"
-
 
 def test_validator(tmp_path):
     t, w, a, gt = flight(30)
@@ -99,13 +81,6 @@ def test_heldout_guard(monkeypatch):
         sequences("heldout")
 
 
-def test_nets_do_not_train_on_the_evaluation_generator():
-    # D-007: sharing one degradation generator would flatter every measured number
-    root = Path(__file__).resolve().parent.parent / "research"
-    for f in [root / "augment.py", *(root / "nets").rglob("*.py")]:
-        if f.exists():
-            assert not re.search(r"\bdegrade\b", f.read_text()), f"{f} references degrade"
-
 
 def test_slower_ground_truth_is_accepted():
     t, _, _, gt = flight()
@@ -119,21 +94,6 @@ def test_folds_never_touch_val_or_heldout():
     assert not used & set(SPLITS["val"]) and not used & set(SPLITS["heldout"])
 
 
-def test_augment_returns_clean_arrays_and_masks_drops():
-    from research.augment import corrupt
-    rng = np.random.default_rng(0)
-    g, a, mask = corrupt(np.zeros((64, 200, 3)), np.zeros((64, 200, 3)), rng)
-    assert np.isfinite(g).all() and np.isfinite(a).all()
-    assert 0 < mask.mean() < 1 and (g[mask == 0] == 0).all()
-
-
-def test_velnet_fits_capacity_and_shapes():
-    import torch
-    from research.nets.vel_net import IN_CHANNELS, VelNet, WINDOW, param_count
-    m = VelNet()
-    assert param_count(m) <= 100_000
-    mu, logvar = m(torch.zeros(2, IN_CHANNELS, WINDOW))
-    assert mu.shape == (2, 3) and logvar.shape == (2, 3)
 
 
 def test_velocity_measurements_bound_drift():
@@ -152,14 +112,6 @@ def test_velocity_measurements_bound_drift():
     assert calls and calls[0] == (VEL_WINDOW, 3, 3)
     assert np.abs(held).max() < np.abs(free).max() / 5
 
-
-def test_keep_rule_is_strict():
-    from research.eval.run_cv import keep_rule
-    seqs = np.array(["a", "a", "b", "b"])
-    base = np.array([10.0, 10.0, 10.0, 10.0])
-    assert keep_rule(base * 0.8, base, seqs)["keep"]
-    assert not keep_rule(base * 0.95, base, seqs)["keep"], "below the 10% gain threshold"
-    assert not keep_rule(np.array([5.0, 5.0, 13.0, 13.0]), base, seqs)["keep"], "one sequence worse by 30%"
 
 
 def test_smoother_leaves_a_consistent_trajectory():

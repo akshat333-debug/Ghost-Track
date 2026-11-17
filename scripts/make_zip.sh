@@ -11,13 +11,11 @@ work=build/bundle
 rm -rf "$work" && mkdir -p "$work/sample/imu0" "$work/$name/src" submission
 # files sit at the zip root, as drawn on slide 17
 python3 research/official/degrade_imu.py "$clean" "$work/sample/imu0/data.csv" > "$work/degrade.log"
-python3 -X tracemalloc - "$work/sample/imu0/data.csv" "$work/$name/estimated_trajectory.txt" "$clean" > "$work/$name/metadata.json" <<'PY'
-import runpy, sys, tracemalloc
-imu, out, clean = sys.argv[1:4]
-sys.argv = ["main.py", imu, out]
-runpy.run_path("src/main.py", run_name="__main__")
-peak = tracemalloc.get_traced_memory()[1]
-import json, platform, subprocess, time  # after the measurement: these imports are the harness's, not the estimator's
+heap=$(python3 scripts/heap_probe.py "$work/sample/imu0/data.csv" "$work/$name/estimated_trajectory.txt")
+python3 - "$work/sample/imu0/data.csv" "$work/$name/estimated_trajectory.txt" "$clean" "$heap" > "$work/$name/metadata.json" <<'PY'
+import json, platform, subprocess, sys, time
+imu, out, clean, heap = sys.argv[1:5]
+heap = json.loads(heap)
 walls = []
 for _ in range(3):
     t = time.perf_counter()
@@ -31,7 +29,9 @@ print(json.dumps({
     "dependencies": "Python 3 standard library only",
     "sample_input": f"{clean} degraded with the organizers' degrade_imu.py (defaults, seed 42), raw EuRoC column order",
     "poses": len(rows), "imu_seconds": round(seconds, 3),
-    "peak_heap_mb_traced_from_interpreter_start": round(peak / 1e6, 2),
+    "peak_heap_mb_algorithm": heap["algorithm_mb"],
+    "peak_heap_mb_including_script_compilation": heap["with_compile_mb"],
+    "heap_note": "tracemalloc; interpreter start-up excluded",
     "wall_seconds_whole_process_best_of_3": round(min(walls), 3),
     "ms_per_imu_second": round(min(walls) * 1000 / seconds, 2),
     "threads": 1, "python": platform.python_version(), "machine": platform.machine(), "system": platform.system(),

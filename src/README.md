@@ -2,6 +2,7 @@
 
 IMU-only 6-DoF trajectory estimation under sensor degradation. Python 3 standard library only: nothing to
 install, single thread, no network, no files other than the input and the output.
+Tested on Python 3.9, 3.12, 3.13 and 3.14: the output file is byte-identical on all of them.
 
 ## Run
 

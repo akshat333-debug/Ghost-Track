@@ -15,7 +15,7 @@ def flight(seconds=60, hz=200):
     t_ns = 1_400_000_000_000_000_000 + np.arange(seconds * hz) * (10**9 // hz)
     T = (t_ns - t_ns[0]) * 1e-9
     p = np.c_[np.cos(T) - 1, np.sin(T), 0 * T]
-    q = R.from_euler("z", T).as_quat()
+    q = R.from_euler("z", T[:, None]).as_quat()  # (N, 1): SciPy 1.18 rejects a flat angle array for one axis
     acc_w = np.c_[-np.cos(T), -np.sin(T), 0 * T]
     accel = R.from_quat(q).inv().apply(acc_w + [0, 0, G])
     gyro = np.tile([0.0, 0, 1], (len(T), 1))

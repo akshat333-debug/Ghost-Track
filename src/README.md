@@ -1,5 +1,7 @@
 # Path Finder submission (Team Zero Drift, VITVellore_ZeroDrift)
 
+Akshat Agrawal (23MIC0079), Hemang Dubey (23MIC0069), Ishita Solanki (23MID0443). Vellore Institute of Technology.
+
 IMU-only 6-DoF trajectory estimation under sensor degradation. Python 3 standard library only: nothing to
 install, single thread, no network, no files other than the input and the output.
 Tested on Python 3.9, 3.12, 3.13, 3.14 and in Docker on Linux: the output file is byte-identical on all of them.
@@ -38,3 +40,6 @@ start attitude. A header line is optional.
 See `../metadata.json` for the numbers measured when this bundle was built: about 1 MB of Python heap while
 estimating, under 3 MB counting the one-off compilation of this script, and about 2 ms per second of IMU.
 If anything inside the estimator ever fails, a neutral trajectory with one pose per row is still written.
+
+Timestamp unit: the one that makes the sample period a plausible IMU rate (10 Hz to 10 kHz); epoch magnitude
+breaks ties. Works for Unix-epoch and time-since-start files alike.

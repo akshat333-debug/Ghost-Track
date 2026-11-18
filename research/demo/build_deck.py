@@ -12,6 +12,8 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+MEMBERS = ["Akshat Agrawal (23MIC0079)", "Hemang Dubey (23MIC0069)", "Ishita Solanki (23MID0443)"]
+VIDEO_URL = "[add link]"  # set before the final rebuild
 FIG = ROOT / "demo" / "figures" / "dark"
 INK, MUTED, BLUE, ORANGE, CARD = RGBColor(0xF0, 0xEF, 0xEC), RGBColor(0xA9, 0xB1, 0xC4), RGBColor(0x39, 0x87, 0xE5), \
     RGBColor(0xD9, 0x59, 0x26), RGBColor(0x14, 0x1B, 0x2E)
@@ -67,6 +69,16 @@ def build():
     by = {sh.name: sh for sh in s[0].shapes}
     set_text(by["Text 7"], "Track 03 · Path Finder")
     set_text(by["Text 8"], "XR Hackathon")
+    members = by["Text Box 22"].text_frame
+    members.word_wrap = True
+    members.paragraphs[0].runs[0].text = "Team members"
+    members.paragraphs[0].runs[0].font.bold = True
+    for name in MEMBERS:
+        r = members.add_paragraph().add_run()
+        r.text = name
+        r.font.size = Pt(13)
+        r.font.color.rgb = INK
+        r.font.name = "Calibri"
     tf = by["Text 10"].text_frame
     tf.paragraphs[0].runs[0].text = "Team Zero Drift (VITVellore_ZeroDrift)"
     tf.paragraphs[1].runs[0].text = "Vellore Institute of Technology, Vellore"
@@ -145,7 +157,7 @@ def build():
               ("Numbers that survive scrutiny", "Train / validation / held-out split frozen on day one. Tuned only on randomised variants of the organizers' degradation, reported on their exact config."),
               ("Always versus doing nothing", "A tracker that never moves is a strong baseline indoors. Each result is printed next to it, including where we do not beat it."),
               ("Built for the budget", "No numpy: 8-state filter and smoother hand-written in plain Python. Memory independent of file length."),
-              ("Hard to break", "13 malformed-input cases under test: no header, CRLF, NaN tails, other units and rates, 15-minute files, a sensor that never moves.")]
+              ("Hard to break", "15 malformed-input cases under test, plus a forced crash: no header, CRLF, NaN tails, other units and rates, 15-minute files, a sensor that never moves.")]
     for i, (head, body) in enumerate(points):
         x, y = 0.4 + (i % 3) * 3.1, 1.1 + (i // 3) * 2.1
         card(s[5], x, y, 2.95, 1.95)
@@ -170,7 +182,7 @@ def build():
     text(s[6], 6.25, 1.15, 3.4, 4.1, [
         ("Links", {"size": 14, "bold": True, "color": BLUE}),
         "Code: github.com/akshat333-debug/Ghost-Track",
-        "Demo video: [add link]",
+        "Demo video: " + VIDEO_URL,
         ("In the repository", {"size": 14, "bold": True, "color": BLUE}),
         "README.md: results and limits",
         "docs/DECISIONS.md: every design decision with its evidence, including the ones that failed",

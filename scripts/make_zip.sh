@@ -24,7 +24,9 @@ for _ in range(3):
 rows = [ln.split()[0] for ln in open(out)]
 seconds = float(rows[-1]) - float(rows[0])
 print(json.dumps({
-    "team": "VITVellore_ZeroDrift", "track": 3, "entrypoint": "src/main.py",
+    "team": "VITVellore_ZeroDrift", "track": 3,
+    "members": ["Akshat Agrawal (23MIC0079)", "Hemang Dubey (23MIC0069)", "Ishita Solanki (23MID0443)"],
+    "college": "Vellore Institute of Technology, Vellore", "entrypoint": "src/main.py",
     "run": "python3 src/main.py <imu0/data.csv | folder | zip> [estimated_trajectory.txt]",
     "dependencies": "Python 3 standard library only",
     "sample_input": f"{clean} degraded with the organizers' degrade_imu.py (defaults, seed 42), raw EuRoC column order",

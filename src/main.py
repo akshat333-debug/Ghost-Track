@@ -138,16 +138,23 @@ def median(xs):
 
 
 def time_digits(ts):
-    """Returns (decimal digits of the timestamp unit: 0 s, 3 ms, 6 us, 9 ns; median positive step)."""
+    """Returns (decimal digits of the timestamp unit: 0 s, 3 ms, 6 us, 9 ns; median positive step).
+
+    The unit is the one that makes the sample period a plausible IMU rate (10 Hz to 10 kHz). Only when two units
+    fit (a rate right at an edge) does the size of the first timestamp decide, read as Unix epoch time.
+    """
     steps = [b - a for a, b in zip(ts, ts[1:]) if b > a]
     if not ts or not steps:
         return 9, 5e6  # nothing to measure: the documented EuRoC format, nanoseconds at 200 Hz
     step = median(steps)
+    fits = [d for d in (9, 6, 3, 0) if 1e-4 <= step * 10.0 ** -d <= 0.1]
     t0 = abs(ts[0])
-    if t0 > 1e8:
-        # epoch time: the magnitude names the unit whatever the sample rate is
-        return (0 if t0 < 1e11 else 3 if t0 < 1e14 else 6 if t0 < 1e17 else 9), step
-    # time since start: go by the step, with the same thresholds as the organizers' script
+    epoch = 0 if t0 < 1e11 else 3 if t0 < 1e14 else 6 if t0 < 1e17 else 9
+    if len(fits) == 1:
+        return fits[0], step
+    if epoch in fits or (not fits and t0 > 1e8):
+        return epoch, step
+    # neither rule decides: the organizers' script's thresholds
     return (0 if step < 1.0 else 3 if step < 1e3 else 6 if step < 1e6 else 9), step
 
 

@@ -97,13 +97,16 @@ def variant(name, lines):
     if name == "nanoseconds_at_2khz":  # a step below 1e6 ns must not be read as microseconds
         t0 = int(cell(body[0])[0])
         return [head] + ["%d," % (t0 + i * 500000) + ",".join(cell(ln)[1:]) for i, ln in enumerate(body)]
+    if name == "relative_nanoseconds":  # time since start, not epoch, starting at 0.3 s
+        t0 = int(cell(body[0])[0])
+        return [head] + ["%d," % (int(cell(ln)[0]) - t0 + 300_000_000) + ",".join(cell(ln)[1:]) for ln in body]
     if name == "half_rate":
         return [head] + body[::2]
     raise KeyError(name)
 
 
 CASES = ["motionless", "no_header", "crlf", "shorter_than_failure_block", "nan_tail", "empty_fields_mid_file", "all_rows_dead",
-         "float_timestamps", "seconds", "microseconds", "accel_in_g", "duplicates_at_start", "nanoseconds_at_2khz", "half_rate"]
+         "float_timestamps", "seconds", "microseconds", "accel_in_g", "duplicates_at_start", "nanoseconds_at_2khz", "relative_nanoseconds", "half_rate"]
 
 
 @pytest.mark.parametrize("name", CASES)
@@ -125,6 +128,8 @@ def test_robustness_matrix(tmp_path, name):
     if name in ("no_header", "crlf", "float_timestamps", "microseconds", "accel_in_g", "duplicates_at_start", "nanoseconds_at_2khz"):
         expect = t[0] * 1e-9
         assert abs(out[0, 0] - expect) < 1e-5, "timestamps must come out in seconds"
+    if name == "relative_nanoseconds":
+        assert abs(out[0, 0] - 0.3) < 1e-9 and abs(out[1, 0] - out[0, 0] - 0.005) < 1e-9
     if name in ("no_header", "crlf", "float_timestamps", "microseconds", "accel_in_g", "duplicates_at_start"):
         up = R.from_quat(out[:, 4:8]).apply([0, 0, 1.0])[:, 2]
         # the circling flight starts with 1 m/s^2 centripetal acceleration: 5.8 deg of honest start tilt error

@@ -1,0 +1,22 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Submission runs with the standard library only
+        run: |
+          python -I -c "import ast, sys; tree = ast.parse(open('src/main.py').read()); mods = {n.names[0].name.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.Import)} | {n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}; bad = mods - set(sys.stdlib_module_names) if hasattr(sys, 'stdlib_module_names') else set(); print('imports:', sorted(mods)); sys.exit(f'non-stdlib imports: {bad}' if bad else 0)"
+      - name: Install evaluation harness
+        run: pip install -r requirements.txt
+      - name: Tests
+        run: python -m pytest tests -q

@@ -1,6 +1,6 @@
 # Tasks
 
-Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator, B evaluation, C docs, deck, video (see CLAUDE.md).
+Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator, B evaluation, C docs, deck, video (see CONTRIBUTING.md).
 
 ## Status (18 Nov)
 - [x] `src/main.py`: pure standard library, two streaming passes, rotor-drag node filter, blind forecast (D-024 to D-026)
@@ -8,9 +8,12 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator, B
 - [x] Budgets: 0.84–1.12 MB heap while estimating, 1.5 ms per IMU-second; Docker verified (D-028)
 - [x] Final audit: timestamp unit made rate-driven, team added, README rewritten, CI added (D-029)
 - [x] Submission zip, deck with team members, figures, video script
+- [x] Multi-seed val report (20/20 beat never-moving), hero animation, lean README + deck, docs/RESULTS.md (D-030)
 - [ ] Record the 2–3 min video; set `VIDEO_URL` in `research/demo/build_deck.py`, rebuild the deck
 - [ ] Make the repository public
 - [ ] Submit the Google Form (deadline 22 Nov 23:59)
+
+Handoff 18 Nov: README is a landing page; details live in docs/RESULTS.md, docs/REPRODUCE.md, docs/CONTRIBUTING.md. Rebuild visuals with `python3 -m research.demo.hero` and `python3 -m research.demo.build_deck`. Held-out still 1 of 3 used.
 
 Older items and handoff notes below are history: files they mention may only exist at git tag `pre-cleanup`.
 

@@ -7,6 +7,7 @@ python -m research.eval.run_official --method research.baselines.eskf --split va
 --method is a script path (run as `python <script> <imu.csv> <out.txt>`) or a module with run(t_ns, gyro, accel).
 --variant official = script defaults with its own seed, both column orders (D-016). Report only.
 --variant dev = randomized configs from official_degrade.dev_variant. The only variant allowed for tuning (D-017).
+--variant seeds = script defaults with seeds 1..n instead of 42, both column orders. Report only (D-030).
 """
 import argparse
 import importlib
@@ -44,6 +45,8 @@ def estimate(method, csv, est):
 def variants(kind, n):
     if kind == "official":
         return [{"order": "A"}, {"order": "B"}]
+    if kind == "seeds":
+        return [{"seed": s, "order": o} for s in range(1, n + 1) for o in "AB"]
     return [dev_variant(i) for i in range(n)]
 
 
@@ -68,12 +71,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", required=True)
     ap.add_argument("--split", default="train")
-    ap.add_argument("--variant", choices=["dev", "official"], default="dev")
+    ap.add_argument("--variant", choices=["dev", "official", "seeds"], default="dev")
     ap.add_argument("--n", type=int, default=4, help="dev variants per sequence")
     ap.add_argument("--seqs", nargs="+", help="subset of the split")
     ap.add_argument("--out", help="write per-run rows as JSON, for paired keep-rule comparisons")
     a = ap.parse_args()
-    if a.variant == "official" and a.split == "train":
+    if a.variant in ("official", "seeds") and a.split == "train":
         sys.exit("official config is report-only: use val or held-out (D-017)")
     rows = evaluate(a.method, a.split, a.variant, a.n, a.seqs)
     for stat in (np.nanmean, np.nanmedian):

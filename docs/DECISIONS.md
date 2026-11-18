@@ -26,7 +26,7 @@ Format: ID · date · decision · why · alternatives rejected · owner. Never e
 - Rejected: conditional "build only if needed" scoping proposed on 9 Nov.
 
 ### D-006 · 9 Nov · Every selection uses val; held-out is report-only (supersedes the "held-out" wording in D-004)
-- D-004's "must beat the previous one on held-out" and its Day 5 fallback test contradicted D-003 and the CLAUDE.md held-out rule: picking layers on held-out makes the reported numbers optimistic.
+- D-004's "must beat the previous one on held-out" and its Day 5 fallback test contradicted D-003 and the team held-out rule (docs/CONTRIBUTING.md): picking layers on held-out makes the reported numbers optimistic.
 - Layer keep/drop, thresholds, model choice and the Day 5 fallback are all decided on val (MH_05, TUM room5). Held-out runs only through `scripts/run_heldout.sh`, for reporting.
 
 ### D-007 · 9 Nov · Anti-overfitting protocol (refines D-006)
@@ -172,3 +172,10 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - Output is byte-identical before and after on all 26 files checked (22 train dev variants, 4 val official), so held-out run 1 still describes the shipped code; held-out was not touched.
 - Reviewed and left as is: out-of-order rows keep input order in the output (one pose per row, as required); gyro in deg/s is not detected (the brief fixes rad/s); with no input argument the current folder is searched, preferring `imu0/data.csv`.
 - Added: GitHub Actions running the full test suite on Python 3.10 and 3.12 and checking that `src/main.py` imports only the standard library; team members in the deck, README, `src/README.md` and zip metadata.
+
+### D-030 · 18 Nov · Multi-seed report and presentation pass
+- New report-only variant `--variant seeds` in `research/eval/run_official.py`: organizer defaults with seeds 1..n, both column orders; refused on train like `official`. Ran once on val, n = 5: 20 of 20 runs beat never-moving. Nothing was tuned on it; `src/main.py` is unchanged.
+- Why: judges may degrade with a seed other than 42; a public rival entry reports three seeds. The result is now a headline row.
+- README cut to a landing page (tagline, numbers, use cases, one diagram, one figure, run commands); detail moved to `docs/RESULTS.md` and `docs/REPRODUCE.md`. Hero animation `demo/figures/hero.gif` (room5, validation) from `research/demo/hero.py`; MH_05 was not used: its estimate stays near the flight centre, which shows the limit of IMU-only tracking rather than motion recovery.
+- Deck text cut by about half; brownie slide now shows use cases (GPS-denied aircraft, XR headset tracking failover, wearables).
+- Team workflow rules moved to `docs/CONTRIBUTING.md`; local tooling notes are no longer tracked.

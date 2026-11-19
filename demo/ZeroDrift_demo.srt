@@ -71,118 +71,134 @@ Every input row gets a pose, in exact
 TUM format, and the validator says OK.
 
 19
-00:00:58,737 --> 00:01:03,351
+00:00:58,737 --> 00:01:03,349
 Budget check: under one megabyte of heap, against a limit of
 
 20
-00:01:03,351 --> 00:01:07,889
-eight. 1.4 milliseconds per second of data, against twenty.
+00:01:03,349 --> 00:01:07,885
+eight. 1.5 milliseconds per second of data, against twenty.
 
 21
-00:01:09,039 --> 00:01:13,521
+00:01:09,035 --> 00:01:13,517
 So how does it work? First, it measures the file itself: column
 
 22
-00:01:13,521 --> 00:01:17,647
+00:01:13,517 --> 00:01:17,643
 order, units, sample rate and gravity. Nothing is assumed.
 
 23
-00:01:17,997 --> 00:01:20,968
+00:01:17,993 --> 00:01:20,963
 Then it repairs dead, stuck and spiky
 
 24
-00:01:20,968 --> 00:01:24,179
+00:01:20,963 --> 00:01:24,175
 rows, and tracks attitude from the gyro.
 
 25
-00:01:24,529 --> 00:01:27,501
+00:01:24,525 --> 00:01:27,496
 And here's the trick. On a multirotor, rotor drag
 
 26
-00:01:27,501 --> 00:01:30,715
+00:01:27,496 --> 00:01:30,711
 makes the sideways accelerometer reading proportional
 
 27
-00:01:30,715 --> 00:01:33,444
+00:01:30,711 --> 00:01:33,440
 to speed. So physics becomes our speedometer.
 
 28
-00:01:33,794 --> 00:01:36,284
+00:01:33,790 --> 00:01:36,280
 A backward smoother lets the future correct
 
 29
-00:01:36,284 --> 00:01:38,832
+00:01:36,280 --> 00:01:38,828
 the past. And when the sensor dies, the path
 
 30
-00:01:38,832 --> 00:01:41,264
+00:01:38,828 --> 00:01:41,260
 relaxes toward where the vehicle has been.
 
 31
-00:01:42,414 --> 00:01:45,968
+00:01:42,410 --> 00:01:45,964
 Here it is on a handheld recording. Left, the raw
 
 32
-00:01:45,968 --> 00:01:50,031
+00:01:45,964 --> 00:01:50,027
 signal. Right, what we recover, drawn over ground truth.
 
 33
-00:01:50,381 --> 00:01:53,530
+00:01:50,377 --> 00:01:53,526
 Now the IMU dies, and we keep tracking,
 
 34
-00:01:53,530 --> 00:01:55,871
+00:01:53,526 --> 00:01:55,867
 blind, for five full seconds.
 
 35
-00:01:57,021 --> 00:02:00,656
+00:01:57,017 --> 00:02:00,651
 On four held-out sequences we never touched while building, we
 
 36
-00:02:00,656 --> 00:02:04,114
+00:02:00,651 --> 00:02:04,110
 beat a tracker that never moves in eight runs out of eight.
 
 37
-00:02:04,464 --> 00:02:08,191
+00:02:04,460 --> 00:02:08,187
 Fresh random seeds, both column orders: twenty out of twenty,
 
 38
-00:02:08,191 --> 00:02:11,552
+00:02:08,187 --> 00:02:11,548
 and up to forty five percent better on handheld motion.
 
 39
-00:02:11,902 --> 00:02:14,654
-Seven times under the memory limit. Thirteen
+00:02:11,898 --> 00:02:14,420
+Seven times under the memory limit. 13
 
 40
-00:02:14,654 --> 00:02:17,094
+00:02:14,420 --> 00:02:17,008
 times under compute. Zero dependencies.
 
 41
-00:02:18,244 --> 00:02:22,060
-Where does it matter? GPS denied drones, exactly the brief.
+00:02:18,158 --> 00:02:21,080
+So what does this mean for Samsung XR? On handheld
 
 42
-00:02:22,410 --> 00:02:28,185
-XR headsets, like Galaxy XR, when the cameras lose tracking
+00:02:21,080 --> 00:02:24,060
+motion, the closest to a headset in our data, error
 
 43
-00:02:28,185 --> 00:02:33,764
-in the dark. We keep the pose alive until vision returns.
+00:02:24,060 --> 00:02:26,981
+drops fourteen to forty five percent, and tracking
 
 44
-00:02:34,114 --> 00:02:39,613
-And tiny wearables, with no room for numpy, GPUs or big models.
+00:02:26,981 --> 00:02:29,903
+carries on for five seconds after the sensor dies.
 
 45
-00:02:40,763 --> 00:02:43,966
-We stay honest. Every number is compared with doing
+00:02:30,253 --> 00:02:33,899
+On a Galaxy XR class headset, that is an IMU failover
 
 46
-00:02:43,966 --> 00:02:47,546
-nothing, and every decision is logged, even the failures.
+00:02:33,899 --> 00:02:37,752
+for when the cameras lose tracking, in the dark or under
 
 47
-00:02:47,896 --> 00:02:49,717
+00:02:37,752 --> 00:02:41,536
+occlusion, keeping the pose alive until vision returns.
+
+48
+00:02:41,886 --> 00:02:45,345
+All for under one megabyte of memory and well under
+
+49
+00:02:45,345 --> 00:02:48,805
+one percent of one CPU core. And the very same file
+
+50
+00:02:48,805 --> 00:02:52,332
+serves GPS denied drones, exactly the track's brief.
+
+51
+00:02:53,482 --> 00:02:55,303
 Team Zero Drift. Thank you!
 

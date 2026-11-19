@@ -1,6 +1,6 @@
 # Walkthrough video
 
-**[ZeroDrift_demo.mp4](ZeroDrift_demo.mp4)** · 2:50 · 1080p · captions burned in, also as [ZeroDrift_demo.srt](ZeroDrift_demo.srt).
+**[ZeroDrift_demo.mp4](ZeroDrift_demo.mp4)** · 2:56 · 1080p · captions burned in, also as [ZeroDrift_demo.srt](ZeroDrift_demo.srt).
 
 Built by `research/demo/video.py`: every frame is rendered from real data, and the terminal scene runs the
 organizers' `degrade_imu.py`, `src/main.py`, the format validator and `scripts/measure_budget.sh` for real on
@@ -16,8 +16,8 @@ captions and annotations are timed from the real audio.
 | 4 | How it works | Probe, repair, attitude, rotor-drag speed sensor, smoother, blind forecast |
 | 5 | Sensor dies | Trajectory drawn over ground truth, through the 5 s blind window; ATE vs never-moving |
 | 6 | The numbers | Held-out 8/8, any seed 20/20, 7× under memory, 13× under compute, 0 dependencies |
-| 7 | Where it ships | GPS-denied drones, XR headset failover, wearables |
-| 8 | Close | Honesty points, team |
+| 7 | Results & Impact for Samsung XR | 14–45% lower error on handheld motion, 5 s tracked after the IMU dies, live compute; camera-loss failover for XR headsets, near-zero cost, same file for GPS-denied drones |
+| 8 | Close | Title, tagline, team |
 
 Rebuild (clips are cached in `build/video/`, so only changed lines are re-voiced):
 

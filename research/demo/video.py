@@ -41,7 +41,7 @@ plt.rcParams.update({"font.family": ["Arial", "DejaVu Sans"], "text.color": INK,
                      "grid.color": GRID, "font.size": 16})
 
 # what the captions show instead of the spelled-out form the voice needs
-SHOW = {"I-M-U": "IMU", "six D O F": "6-DoF", "X-R": "XR", "G-P-S": "GPS", "G-P-Us": "GPUs", "T-U-M": "TUM"}
+SHOW = {"I-M-U": "IMU", "six D O F": "6-DoF", "X-R": "XR", "G-P-S": "GPS", "G-P-Us": "GPUs", "C-P-U": "CPU", "T-U-M": "TUM"}
 
 
 def caption(say):
@@ -346,7 +346,7 @@ def s_numbers(fig, cues, dur, ctx):
     ax.legend(loc="upper right", fontsize=15, frameon=False); ax.grid(axis="x", visible=False)
     tiles = [("held-out runs", "8 / 8", cues[0] + 2.0), ("any seed, both orders", "20 / 20", cues[1] + 0.3),
              ("handheld, best seed", "−45 %", cues[1] + 2.6), ("memory", "7× under", cues[2] + 0.1),
-             ("compute", "13× under", cues[2] + 1.6), ("dependencies", "0", cues[2] + 3.0)]
+             ("compute", f"{int(20 / ctx['live']['ms'])}× under", cues[2] + 1.6), ("dependencies", "0", cues[2] + 3.0)]
     arts = []
     for i, (lab, val, t0) in enumerate(tiles):
         cx, cy = 0.55 + (i % 2) * 0.215, 0.62 - (i // 2) * 0.19
@@ -366,19 +366,27 @@ def s_numbers(fig, cues, dur, ctx):
     return update
 
 
-def s_usecases(fig, cues, dur, ctx):
-    fig.text(0.06, 0.86, "Where it ships", fontsize=40, fontweight="bold")
-    cards = [("GPS-denied drones", "the track's brief", "Jamming ramps up, the IMU dies:\na pose for every row anyway,\n5 s forecast after failure.", cues[0] + 1.2),
-             ("XR headsets", "Galaxy XR-class 6-DoF", "Cameras lose tracking in the dark,\nunder occlusion or fast motion:\nIMU-only failover keeps the pose.", cues[1]),
-             ("Wearables & hubs", "tiny compute", "~1 MB, single thread,\nno numpy, no GPU, no model:\nany Python 3.9+.", cues[2])]
+def s_impact(fig, cues, dur, ctx):
+    live = ctx["live"]
+    fig.text(0.06, 0.86, "Results & Impact for Samsung XR", fontsize=40, fontweight="bold")
+    # handheld gains: held-out room6 14 %, val room5 17-45 % across seeds (docs/RESULTS.md 1-2)
+    tiles = [("lower error on handheld motion", "14–45 %", cues[0] + 3.2),
+             ("tracked after the IMU dies", "5 s", cues[0] + 6.5),
+             ("per second of IMU  (limit 20 ms)", f"{live['ms']:.1f} ms", cues[2] + 0.8)]
+    cards = [("Camera-loss failover", "dark, occlusion, fast motion:\nthe IMU keeps the 6-DoF pose\nalive until vision returns", cues[1] + 0.2),
+             ("Always on, near-zero cost", f"{live['heap']:.2f} MB heap, one thread\nunder 1 % of one CPU core\nno GPU, no model, no install", cues[2] + 0.4),
+             ("GPS-denied drones too", "the track's brief: jammed IMU,\nthen a dead IMU, and still\na pose for every row", cues[2] + 4.2)]
     arts = []
-    for i, (h, s, b, t0) in enumerate(cards):
+    for i, (lab, val, t0) in enumerate(tiles):
         x = 0.06 + i * 0.30
-        c = card(fig, x, 0.27, 0.27, 0.48, edge=OURS if i == 1 else GRID, lw=3 if i == 1 else 1.5)
-        a = [fig.text(x + 0.02, 0.67, h, fontsize=30, fontweight="bold"),
-             fig.text(x + 0.02, 0.62, s, fontsize=18, color=OURS),
-             fig.text(x + 0.02, 0.36, b, fontsize=19, color=INK, linespacing=1.6)]
-        arts.append(([c] + a, t0))
+        c = card(fig, x, 0.60, 0.27, 0.17)
+        arts.append(([c, fig.text(x + 0.02, 0.715, lab, fontsize=17, color=DIM),
+                      fig.text(x + 0.02, 0.625, val, fontsize=50, fontweight="bold", color=GOOD)], t0))
+    for i, (h, b, t0) in enumerate(cards):
+        x = 0.06 + i * 0.30
+        c = card(fig, x, 0.23, 0.27, 0.30, edge=OURS if i == 0 else GRID, lw=3 if i == 0 else 1.5)
+        arts.append(([c, fig.text(x + 0.02, 0.455, h, fontsize=26, fontweight="bold", color=OURS if i == 0 else INK),
+                      fig.text(x + 0.02, 0.40, b, fontsize=19, color=INK, linespacing=1.6, va="top")], t0))
 
     def update(lt):
         for group, t0 in arts:
@@ -387,19 +395,13 @@ def s_usecases(fig, cues, dur, ctx):
 
 
 def s_close(fig, cues, dur, ctx):
-    hon = [fig.text(0.06, 0.78 - 0.075 * i, s, fontsize=26, color=c) for i, (s, c) in enumerate([
-        ("Honest by design", INK), ("· every number compared with doing nothing", DIM),
-        ("· held-out frozen on day one, tuned only on variants", DIM), ("· every decision logged, failures included", DIM)])]
-    hon[0].set_fontweight("bold"); hon[0].set_fontsize(34)
-    end = [fig.text(0.5, 0.36, "Zero Drift · Path Finder", fontsize=64, fontweight="bold", ha="center"),
-           fig.text(0.5, 0.29, "Jammed IMU in. Full 6-DoF trajectory out.", fontsize=28, ha="center", color=OURS),
-           fig.text(0.5, 0.22, "Akshat Agrawal  ·  Hemang Dubey  ·  Ishita Solanki   —   VIT Vellore", fontsize=20,
+    end = [fig.text(0.5, 0.56, "Zero Drift · Path Finder", fontsize=64, fontweight="bold", ha="center"),
+           fig.text(0.5, 0.48, "Jammed IMU in. Full 6-DoF trajectory out.", fontsize=28, ha="center", color=OURS),
+           fig.text(0.5, 0.40, "Akshat Agrawal  ·  Hemang Dubey  ·  Ishita Solanki   —   VIT Vellore", fontsize=20,
                     ha="center", color=DIM)]
 
     def update(lt):
-        for i, t in enumerate(hon):
-            t.set_alpha(appear(lt, 0.2 + 0.6 * i))
-        fade_group(end, appear(lt, cues[-1]))
+        fade_group(end, appear(lt, 0.1))
     return update
 
 
@@ -422,12 +424,11 @@ SCENES = [
       "Now the I-M-U dies, and we keep tracking, blind, for five full seconds."], s_hero),
     (["On four held-out sequences we never touched while building, we beat a tracker that never moves in eight runs out of eight.",
       "Fresh random seeds, both column orders: twenty out of twenty, and up to forty five percent better on handheld motion.",
-      "Seven times under the memory limit. Thirteen times under compute. Zero dependencies."], s_numbers),
-    (["Where does it matter? G-P-S denied drones, exactly the brief.",
-      "X-R headsets, like Galaxy X-R, when the cameras lose tracking in the dark. We keep the pose alive until vision returns.",
-      "And tiny wearables, with no room for numpy, G-P-Us or big models."], s_usecases),
-    (["We stay honest. Every number is compared with doing nothing, and every decision is logged, even the failures.",
-      "Team Zero Drift. Thank you!"], s_close),
+      "Seven times under the memory limit. {cpu_x} times under compute. Zero dependencies."], s_numbers),
+    (["So what does this mean for Samsung X-R? On handheld motion, the closest to a headset in our data, error drops fourteen to forty five percent, and tracking carries on for five seconds after the sensor dies.",
+      "On a Galaxy X-R class headset, that is an I-M-U failover for when the cameras lose tracking, in the dark or under occlusion, keeping the pose alive until vision returns.",
+      "All for {heap_say} of memory and {cpu_say} of one C-P-U core. And the very same file serves G-P-S denied drones, exactly the track's brief."], s_impact),
+    (["Team Zero Drift. Thank you!"], s_close),
 ]
 LEAD, GAP, TAIL = 0.45, 0.35, 0.7
 
@@ -464,7 +465,9 @@ def main():
     say_vals = dict(naive_say=f"about {ctx['r']['naive_end_km']:.0f} kilometres",
                     real_say=f"just {live['real']:.1f} seconds",
                     heap_say="under one megabyte" if live["heap"] < 1 else f"{live['heap']:.1f} megabytes",
-                    ms_say=f"{live['ms']:.1f} milliseconds")
+                    ms_say=f"{live['ms']:.1f} milliseconds",
+                    cpu_x=f"{int(20 / live['ms'])}",
+                    cpu_say="well under one percent" if live["ms"] < 10 else f"{live['ms'] / 10:.0f} percent")
 
     timeline, caps, audio_parts, t = [], [], [], 0.0
     for lines, setup in SCENES:

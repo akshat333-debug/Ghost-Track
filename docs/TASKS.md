@@ -10,7 +10,7 @@ Status: `todo` / `in progress (owner)` / `done (commit)`. Owners: A estimator, B
 - [x] Submission zip, deck with team members, figures, video script
 - [x] Multi-seed val report (20/20 beat never-moving), hero animation, lean README + deck, docs/RESULTS.md (D-030)
 - [x] Walkthrough video, voiced (Sarvam AI) and captioned: `demo/ZeroDrift_demo.mp4` (D-031)
-- [ ] Upload the video, set `VIDEO_URL` in `research/demo/build_deck.py`, rebuild the deck
+- [ ] Upload the video unlisted to YouTube with `demo/YOUTUBE.md`, set `VIDEO_URL` in `research/demo/build_deck.py`, rebuild the deck
 - [ ] Make the repository public
 - [ ] Submit the Google Form (deadline 22 Nov 23:59)
 

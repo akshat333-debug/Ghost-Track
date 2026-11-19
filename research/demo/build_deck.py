@@ -13,7 +13,7 @@ from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 MEMBERS = ["Akshat Agrawal (23MIC0079)", "Hemang Dubey (23MIC0069)", "Ishita Solanki (23MID0443)"]
-VIDEO_URL = "[add link]"  # set before the final rebuild
+VIDEO_URL = "https://youtu.be/jDXwcx7TNOk"
 FIG = ROOT / "demo" / "figures" / "dark"
 INK, MUTED, BLUE, ORANGE, CARD = RGBColor(0xF0, 0xEF, 0xEC), RGBColor(0xA9, 0xB1, 0xC4), RGBColor(0x39, 0x87, 0xE5), \
     RGBColor(0xD9, 0x59, 0x26), RGBColor(0x14, 0x1B, 0x2E)

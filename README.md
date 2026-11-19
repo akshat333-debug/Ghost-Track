@@ -95,7 +95,7 @@ Reproduce everything (tests, scores, figures, deck, zip): [docs/REPRODUCE.md](do
 | Bundle: trajectory, metadata, source | [submission/VITVellore_ZeroDrift.zip](submission/VITVellore_ZeroDrift.zip) |
 | README, Docker, requirements | this page, [Dockerfile](Dockerfile), [requirements.txt](requirements.txt) |
 | Deck `CollegeName_TeamName` | [presentation/VITVellore_ZeroDrift.pptx](presentation/VITVellore_ZeroDrift.pptx) |
-| Walkthrough video, 2:56, voiced and captioned | [demo/ZeroDrift_demo.mp4](demo/ZeroDrift_demo.mp4) |
+| Walkthrough video, 2:56, voiced and captioned | **[youtu.be/jDXwcx7TNOk](https://youtu.be/jDXwcx7TNOk)** · file: [demo/ZeroDrift_demo.mp4](demo/ZeroDrift_demo.mp4) |
 | Video upload pack (title, description, chapters, captions) | [demo/YOUTUBE.md](demo/YOUTUBE.md) |
 
 ## Team

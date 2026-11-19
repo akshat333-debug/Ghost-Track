@@ -1,6 +1,8 @@
 # YouTube upload
 
 File: `demo/ZeroDrift_demo.mp4` (2:56, 1080p). Captions: upload `demo/ZeroDrift_demo.srt` as English (India) subtitles; they are also burned into the video.
+Uploaded 19 Nov: **https://youtu.be/jDXwcx7TNOk**
+
 Visibility: **Unlisted** (anyone with the link can watch, judges included). After upload, put the link in `VIDEO_URL` in `research/demo/build_deck.py`, run `python3 -m research.demo.build_deck`, and replace the video row in `README.md`.
 
 ## Title

@@ -11,6 +11,7 @@ Needs Python 3 and `pip install -r requirements.txt` (the submission itself need
 | Held-out report (budgeted, clean tree) | `scripts/run_heldout.sh` |
 | Memory and runtime budgets | `scripts/measure_budget.sh research/data/euroc/MH_01_easy/mav0/imu0/data.csv` |
 | Submission zip | `scripts/make_zip.sh` |
+| Walkthrough video (Sarvam AI voice-over, needs `SARVAM_API_KEY`) | `python3 -m research.demo.video` |
 | Figures, hero animation, deck | `python3 -m research.demo.figures && python3 -m research.demo.figures --dark && python3 -m research.demo.hero && python3 -m research.demo.build_deck` |
 
 ## Repository layout
@@ -20,7 +21,7 @@ Needs Python 3 and `pip install -r requirements.txt` (the submission itself need
 | `src/` | The submission: `main.py` and its README |
 | `submission/` | Bundle zip in the slide-17 layout |
 | `presentation/` | Deck and the organizers' template |
-| `demo/` | Video script, figures, hero animation |
+| `demo/` | Walkthrough video and captions, figures, hero animation |
 | `research/official/` | Organizers' `degrade_imu.py`, unchanged |
 | `research/eval/` | evo scorer, format validator, runner, rotor-drag gate |
 | `research/explore/` | Tuning sweeps and prototypes behind each decision |

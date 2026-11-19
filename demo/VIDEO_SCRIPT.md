@@ -1,15 +1,27 @@
-# Walkthrough video script (target 2:30, hard limit 3:00)
+# Walkthrough video
 
-Screen recording with voice-over. Times are cumulative. Numbers are the held-out run 1 and budget rows of `docs/EXPERIMENTS.md`.
+**[ZeroDrift_demo.mp4](ZeroDrift_demo.mp4)** · 2:50 · 1080p · captions burned in, also as [ZeroDrift_demo.srt](ZeroDrift_demo.srt).
 
-| Time | On screen | Say |
+Built by `research/demo/video.py`: every frame is rendered from real data, and the terminal scene runs the
+organizers' `degrade_imu.py`, `src/main.py`, the format validator and `scripts/measure_budget.sh` for real on
+room5 (validation), showing their actual output. Spoken numbers are taken from that same run.
+Voice-over: Sarvam AI `bulbul:v4-flash`, Indian English (`sunny_en_social`), one request per caption line so
+captions and annotations are timed from the real audio.
+
+| # | Scene | What is shown |
 |---|---|---|
-| 0:00–0:15 | Deck slide 1, then slide 2 | "Track 3, Path Finder, Team Zero Drift. We get one sensor, an IMU. It degrades through the mission, then dies, and we still have to output the path, including five blind seconds." |
-| 0:15–0:35 | `demo/figures/health_MH_05.png` full screen | "This is what the organizers' script does to a real flight: missing rows, stuck samples, duplicated rows, rising noise, and at the end every value is zero." |
-| 0:35–1:00 | Terminal: `python3 research/official/degrade_imu.py <clean> data/imu0/data.csv`, then `python3 src/main.py data/imu0/data.csv estimated_trajectory.txt`, then `head -3 estimated_trajectory.txt` | "One command. Python standard library only, nothing to install. One pose per input row in TUM format." |
-| 1:00–1:35 | Deck slide 4 (architecture) | "Two streaming passes, so the file is never held in memory. First pass: clean the rows and integrate attitude. Then a small filter with a backward smoother. Its key measurement is physics: on a multirotor the sideways accelerometer reading is proportional to speed, because of rotor drag. Second pass writes the poses. After the sensor dies the path relaxes to the centre of where the vehicle has been." |
-| 1:35–1:55 | Terminal: `scripts/measure_budget.sh ...` output | "Budgets: about one megabyte of heap while estimating, under three counting compilation of the script, limit 8. One and a half milliseconds per second of data, limit 20." |
-| 1:55–2:25 | Deck slide 5 (held-out bars), then `demo/figures/error_MH_05.png` | "On four held-out sequences that we never used for any choice, degraded with the organizers' own settings, our error is 2.67 metres against 2.87 for a tracker that never moves, better on all eight runs. That is a 7 percent gain. We say that plainly: an IMU alone cannot hold a position for minutes, and we compare every number with doing nothing." |
-| 2:25–2:40 | Deck slide 6, then repo `docs/DECISIONS.md` scrolling | "Every decision, including the ideas that failed, is logged with its evidence in the repository. Thank you." |
+| 1 | Title | Tagline, team |
+| 2 | The problem | room5 signal through the organizers' script; plain integration ends ~2 km away |
+| 3 | Live run | degrade, estimate, rows in = poses out, validator OK, heap and runtime vs budget |
+| 4 | How it works | Probe, repair, attitude, rotor-drag speed sensor, smoother, blind forecast |
+| 5 | Sensor dies | Trajectory drawn over ground truth, through the 5 s blind window; ATE vs never-moving |
+| 6 | The numbers | Held-out 8/8, any seed 20/20, 7× under memory, 13× under compute, 0 dependencies |
+| 7 | Where it ships | GPS-denied drones, XR headset failover, wearables |
+| 8 | Close | Honesty points, team |
 
-Recording checklist: terminal font at least 18 pt; run the commands live from a fresh clone; keep under 3:00; upload to YouTube or Drive and put the link on deck slide 7 and in the form.
+Rebuild (clips are cached in `build/video/`, so only changed lines are re-voiced):
+
+    SARVAM_API_KEY=... python3 -m research.demo.video            # --voice, --pace, --preview <seconds...>
+
+Render on an idle machine: the budget scene measures live, so a busy CPU shows a slower runtime.
+Upload the mp4 to YouTube or Drive and put the link in `research/demo/build_deck.py` (`VIDEO_URL`) and the form.

@@ -179,3 +179,11 @@ Training data is small (11 sequences, roughly 25 min) and val is only 2 sequence
 - README cut to a landing page (tagline, numbers, use cases, one diagram, one figure, run commands); detail moved to `docs/RESULTS.md` and `docs/REPRODUCE.md`. Hero animation `demo/figures/hero.gif` (room5, validation) from `research/demo/hero.py`; MH_05 was not used: its estimate stays near the flight centre, which shows the limit of IMU-only tracking rather than motion recovery.
 - Deck text cut by about half; brownie slide now shows use cases (GPS-denied aircraft, XR headset tracking failover, wearables).
 - Team workflow rules moved to `docs/CONTRIBUTING.md`; local tooling notes are no longer tracked.
+
+### D-031 · 19 Nov · Walkthrough video built by script, voiced with Sarvam AI
+- `research/demo/video.py` renders `demo/ZeroDrift_demo.mp4` (1080p, under 3 min) and `demo/ZeroDrift_demo.srt` end to end: no screen recording, no hand editing, so anyone with a key can rebuild it.
+- The terminal scene is a real run in a temporary folder: the organizers' `degrade_imu.py` on room5 (validation), `src/main.py`, row count, format validator, `scripts/measure_budget.sh`. Every number the voice says about that run is filled in from its output, so narration cannot claim more than the screen shows.
+- Voice: Sarvam AI `bulbul:v4-flash`, speaker `sunny_en_social`, Indian English. One request per caption line; captions and on-screen labels are timed from the returned audio lengths. Pronunciation of IMU, 6-DoF, TUM and XR checked by sending the clips back through Sarvam speech-to-text.
+- Fact check while scripting: plain double integration of degraded room5 ends 1.97 km from the start, not "hundreds of kilometres" as first drafted; the video says "about 2 kilometres".
+- Render on an idle machine: a first render under heavy unrelated CPU load measured 4.98 ms per IMU-second, against 1.4 ms idle. The idle render ships.
+- The API key is read from `SARVAM_API_KEY` and never stored in the repository.

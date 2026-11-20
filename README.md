@@ -29,6 +29,12 @@
 | Dependencies | **0** · one file, standard library | Python only |
 | Malformed inputs survived | **15 / 15** + forced-crash fallback | one pose per row, always |
 
+**Accuracy on a sensor-hub budget.** Every held-out and every multi-seed run beats the never-moving reference, and all of it
+fits in about 1 MB and 1.5 ms per second of data: one seventh of the memory budget and one thirteenth of the compute.
+That is a deliberate trade-off. Learned models and numpy would buy extra accuracy, but numpy's import alone costs
+9.9 MB, more than the whole budget when measured from interpreter start. We spent the budget on physics instead (rotor drag as a speed sensor, a backward
+smoother), so the same file runs anywhere Python 3.9+ does and leaves almost the whole budget for the rest of a headset or drone stack.
+
 **Robust where it counts.** The organizers have not said which column order the test file uses, and the script and the slides disagree.
 Zero Drift measures the layout itself and beats never-moving in **both** orders.
 

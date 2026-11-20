@@ -4,11 +4,13 @@
 Numbers are the held-out run 1 and budget rows of EXPERIMENTS.md. Figures: python -m research.demo.figures --dark
 python -m research.demo.build_deck
 """
+import copy
 from pathlib import Path
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -65,9 +67,24 @@ def set_text(shape, s):
     run.text = s
 
 
+def clone_slide(prs, like, pos):
+    """New slide with `like`'s background and header shapes, moved to index `pos`."""
+    sl = prs.slides.add_slide(like.slide_layout)
+    sl._element.find(qn("p:cSld")).insert(0, copy.deepcopy(like._element.find(qn("p:cSld")).find(qn("p:bg"))))
+    for sh in like.shapes:
+        if sh.name in ("Shape 0", "Shape 1", "Text 2"):
+            sl.shapes._spTree.append(copy.deepcopy(sh._element))
+    ids = prs.slides._sldIdLst
+    el = ids[-1]
+    ids.remove(el)
+    ids.insert(pos, el)
+    return sl
+
+
 def build():
     prs = Presentation(str(ROOT / "presentation" / "template.pptx"))
     s = list(prs.slides)
+    lim = clone_slide(prs, s[5], 5)  # after Track Final Output: results, then their limits
 
     # 1 title
     by = {sh.name: sh for sh in s[0].shapes}
@@ -152,6 +169,24 @@ def build():
     picture(s[4], "heldout_ate.png", 5.05, 1.1, 4.75)
     text(s[4], 5.05, 4.2, 4.75, 1.1, [
         ("Held-out MH_04, V1_03, V2_02, room6: frozen on day one, never used for a choice. Organizers' script, both column orders, SE(3)-aligned ATE.", {"size": 11, "color": MUTED})])
+
+    # 5b limitations, from docs/RESULTS.md section 5
+    set_text([sh for sh in lim.shapes if sh.name == "Text 2"][0], "LIMITATIONS & NEXT STEPS")
+    limits = [("No absolute position for minutes", "An IMU alone drifts. Gains over never-moving are 3–19% on drones and 14–45% handheld; attitude and local motion are what we recover best."),
+              ("Blind 5 s is a safe guess", "With the IMU dead, last velocity is too noisy to extrapolate, so the path relaxes toward the flown centre. Coasting was tested and was worse."),
+              ("Rotor drag needs rotors", "Drag-as-speed gains 6% on drone flights, under our own 10% bar: shipped as a logged exception. A gate turns it off on handheld data.")]
+    for i, (head, body) in enumerate(limits):
+        y = 1.1 + i * 1.4
+        card(lim, 0.4, y, 5.6, 1.25)
+        text(lim, 0.55, y + 0.08, 5.3, 0.4, [head], size=14.5, color=ORANGE, bold=True)
+        text(lim, 0.55, y + 0.5, 5.3, 0.75, [body], size=12)
+    card(lim, 6.25, 1.1, 3.35, 4.05)
+    text(lim, 6.4, 1.2, 3.1, 3.9, [
+        ("Next steps", {"size": 15, "bold": True, "color": BLUE, "after": 8}),
+        ("Fuse camera or magnetometer fixes when they exist, so IMU drift resets as vision returns.", {"after": 8}),
+        ("Learn the drag coefficient per airframe in flight.", {"after": 8}),
+        ("Port the 8-state filter to C for a sensor hub; memory is already flat.", {"after": 8}),
+        ("Measured, not hidden: every limit above has a row in docs/RESULTS.md.", {"size": 11, "color": MUTED, "link": REPO + "/blob/main/docs/RESULTS.md"})], size=12.5)
 
     # 6 differentiation
     points = [("Wins in both column orders", "Script and slides disagree on the layout. We detect it, and win either way."),

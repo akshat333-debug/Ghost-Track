@@ -14,6 +14,7 @@ from pptx.util import Inches, Pt
 ROOT = Path(__file__).resolve().parent.parent.parent
 MEMBERS = ["Akshat Agrawal (23MIC0079)", "Hemang Dubey (23MIC0069)", "Ishita Solanki (23MID0443)"]
 VIDEO_URL = "https://youtu.be/jDXwcx7TNOk"
+REPO = "https://github.com/akshat333-debug/Ghost-Track"
 FIG = ROOT / "demo" / "figures" / "dark"
 INK, MUTED, BLUE, ORANGE, CARD = RGBColor(0xF0, 0xEF, 0xEC), RGBColor(0xA9, 0xB1, 0xC4), RGBColor(0x39, 0x87, 0xE5), \
     RGBColor(0xD9, 0x59, 0x26), RGBColor(0x14, 0x1B, 0x2E)
@@ -33,6 +34,9 @@ def text(slide, x, y, w, h, paras, size=14, color=INK, bold=False):
         r.font.bold = o.get("bold", bold)
         r.font.color.rgb = o.get("color", color)
         r.font.name = "Calibri"
+        if o.get("link"):
+            r.hyperlink.address = o["link"]
+            r.font.underline = True
         p.space_after = Pt(o.get("after", 6))
     return box
 
@@ -175,13 +179,14 @@ def build():
         ("Reproduce every number", {"size": 14, "bold": True, "color": BLUE}),
         ("python3 -m pytest tests -q", {"size": 12}),
         ("python3 -m research.eval.run_official --method src/main.py --split val --variant official", {"size": 12}),
-        ("Full list: docs/REPRODUCE.md", {"size": 12, "color": MUTED})], size=12)
+        ("Full list: docs/REPRODUCE.md", {"size": 12, "color": MUTED, "link": REPO + "/blob/main/docs/REPRODUCE.md"})], size=12)
     text(s[6], 6.25, 1.15, 3.4, 4.1, [
         ("Links", {"size": 14, "bold": True, "color": BLUE}),
-        "Code: github.com/akshat333-debug/Ghost-Track",
-        "Demo video: " + VIDEO_URL,
-        ("Deep dives", {"size": 14, "bold": True, "color": BLUE}),
-        "docs/RESULTS.md · docs/ARCHITECTURE.md · docs/DECISIONS.md"], size=12)
+        ("GitHub: akshat333-debug/Ghost-Track", {"link": REPO}),
+        ("Demo video: " + VIDEO_URL, {"link": VIDEO_URL}),
+        ("Deep dives", {"size": 14, "bold": True, "color": BLUE})]
+        + [(f"docs/{d}.md", {"link": f"{REPO}/blob/main/docs/{d}.md"}) for d in ("RESULTS", "ARCHITECTURE", "DECISIONS")],
+        size=12)
 
     # 8 brownie: where it ships
     set_text([sh for sh in s[7].shapes if sh.name == "Text 2"][0], "BROWNIE · WHERE IT SHIPS")
